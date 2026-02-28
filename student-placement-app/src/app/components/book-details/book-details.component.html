@@ -1,0 +1,109 @@
+<div class="book-details-container" *ngIf="!loading && book">
+  <div class="breadcrumb">
+    <a routerLink="/books">← Back to Books</a>
+  </div>
+
+  <div class="book-details">
+    <div class="book-image-section">
+      <img [src]="book.imageUrl || 'assets/default-book.jpg'" [alt]="book.title">
+    </div>
+
+    <div class="book-info-section">
+      <h1>{{ book.title }}</h1>
+      <p class="author">by {{ book.author }}</p>
+      
+      <div class="rating" *ngIf="book.averageRating">
+        <span class="stars">
+          <span *ngFor="let star of getStarsArray(book.averageRating || 0)" class="star filled">★</span>
+          <span *ngFor="let star of getStarsArray(5 - (book.averageRating || 0))" class="star">★</span>
+        </span>
+        <span class="rating-value">{{ book.averageRating | number:'1.1-1' }}</span>
+        <span class="review-count">({{ book.reviewCount }} reviews)</span>
+      </div>
+
+      <div class="price-section">
+        <span class="price">${{ book.price | number:'1.2-2' }}</span>
+        <span class="stock" [class.out-of-stock]="book.stockQuantity <= 0">
+          {{ book.stockQuantity > 0 ? book.stockQuantity + ' in stock' : 'Out of Stock' }}
+        </span>
+      </div>
+
+      <p class="description">{{ book.description }}</p>
+
+      <div class="purchase-section" *ngIf="book.stockQuantity > 0">
+        <div class="quantity-selector">
+          <label>Quantity:</label>
+          <input 
+            type="number" 
+            [(ngModel)]="quantity" 
+            min="1" 
+            [max]="book.stockQuantity"
+            class="form-control">
+        </div>
+        <button class="btn btn-primary btn-large" (click)="addToCart()">
+          Add to Cart
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Reviews Section -->
+  <div class="reviews-section">
+    <div class="reviews-header">
+      <h2>Customer Reviews</h2>
+      <button 
+        *ngIf="authService.isAuthenticated()" 
+        class="btn btn-secondary" 
+        (click)="showReviewForm = !showReviewForm">
+        {{ showReviewForm ? 'Cancel' : 'Write a Review' }}
+      </button>
+    </div>
+
+    <!-- Review Form -->
+    <div class="review-form" *ngIf="showReviewForm">
+      <h3>Write Your Review</h3>
+      <div class="form-group">
+        <label>Rating:</label>
+        <select [(ngModel)]="newReview.rating" class="form-control">
+          <option [value]="5">★★★★★ (5 stars)</option>
+          <option [value]="4">★★★★☆ (4 stars)</option>
+          <option [value]="3">★★★☆☆ (3 stars)</option>
+          <option [value]="2">★★☆☆☆ (2 stars)</option>
+          <option [value]="1">★☆☆☆☆ (1 star)</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Comment:</label>
+        <textarea 
+          [(ngModel)]="newReview.comment" 
+          class="form-control" 
+          rows="4"
+          placeholder="Share your thoughts about this book..."></textarea>
+      </div>
+      <button class="btn btn-primary" (click)="submitReview()">Submit Review</button>
+    </div>
+
+    <!-- Reviews List -->
+    <div class="reviews-list">
+      <div class="review-card" *ngFor="let review of reviews">
+        <div class="review-header">
+          <div class="reviewer-info">
+            <strong>{{ review.userFullName || 'Anonymous' }}</strong>
+            <span class="review-date">{{ review.createdAt | date:'mediumDate' }}</span>
+          </div>
+          <div class="review-rating">
+            <span *ngFor="let star of getStarsArray(review.rating)" class="star filled">★</span>
+            <span *ngFor="let star of getStarsArray(5 - review.rating)" class="star">★</span>
+          </div>
+        </div>
+        <p class="review-comment">{{ review.comment }}</p>
+      </div>
+
+      <div *ngIf="reviews.length === 0" class="no-reviews">
+        <p>No reviews yet. Be the first to review this book!</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div *ngIf="loading" class="loading">Loading...</div>

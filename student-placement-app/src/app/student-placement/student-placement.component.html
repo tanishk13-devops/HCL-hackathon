@@ -1,0 +1,119 @@
+<div class="row">
+  <div class="col-md-6 form-section">
+    <h5>Template-driven Form</h5>
+    <form #tForm="ngForm" (ngSubmit)="onSubmitTemplate(tForm)">
+      <div class="mb-3">
+        <label class="form-label">Id</label>
+        <input type="number" name="id" class="form-control" required [(ngModel)]="model.id" #id="ngModel">
+        <div class="text-danger" *ngIf="submittedTemplate && id.invalid">Id is required.</div>
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label">Name</label>
+        <input type="text" name="name" class="form-control" required [(ngModel)]="model.name" #name="ngModel">
+        <div class="text-danger" *ngIf="submittedTemplate && name.invalid">Name is required.</div>
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label">Course</label>
+        <select name="course" class="form-select" required [(ngModel)]="model.course" #course="ngModel">
+          <option value="">Select course</option>
+          <option *ngFor="let c of courses" [value]="c">{{c}}</option>
+        </select>
+        <div class="text-danger" *ngIf="submittedTemplate && course.invalid">Course is required.</div>
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label">College</label>
+        <input type="text" name="college" class="form-control" required [(ngModel)]="model.college" #college="ngModel">
+        <div class="text-danger" *ngIf="submittedTemplate && college.invalid">College is required.</div>
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label d-block">Placement</label>
+        <div class="form-check form-check-inline">
+          <input class="form-check-input" type="radio" name="placement" [(ngModel)]="model.placement" [value]="true" #placement="ngModel">
+          <label class="form-check-label">Yes</label>
+        </div>
+        <div class="form-check form-check-inline">
+          <input class="form-check-input" type="radio" name="placement" [(ngModel)]="model.placement" [value]="false">
+          <label class="form-check-label">No</label>
+        </div>
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label">Comment</label>
+        <textarea name="comment" class="form-control" rows="3" [(ngModel)]="model.comment"></textarea>
+      </div>
+
+      <button class="btn btn-primary me-2" type="submit">Submit</button>
+      <button type="button" class="btn btn-secondary" (click)="resetTemplate(tForm)">Reset</button>
+    </form>
+
+    <div class="mt-3">
+      <div *ngIf="templateResult" class="form-result">
+        <strong>Submitted (Template):</strong>
+        <pre>{{templateResult | json}}</pre>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-md-6 form-section">
+    <h5>Reactive Form (FormGroup)</h5>
+    <form [formGroup]="reactiveForm" (ngSubmit)="onSubmitReactive()">
+      <div class="mb-3">
+        <label class="form-label">Id</label>
+        <input type="number" formControlName="id" class="form-control">
+        <div class="text-danger" *ngIf="submittedReactive && reactiveForm.get('id')?.invalid">Id is required.</div>
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label">Name</label>
+        <input type="text" formControlName="name" class="form-control">
+        <div class="text-danger" *ngIf="submittedReactive && reactiveForm.get('name')?.invalid">Name is required.</div>
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label">Course</label>
+        <select formControlName="course" class="form-select">
+          <option value="">Select course</option>
+          <option *ngFor="let c of courses" [value]="c">{{c}}</option>
+        </select>
+        <div class="text-danger" *ngIf="submittedReactive && reactiveForm.get('course')?.invalid">Course is required.</div>
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label">College</label>
+        <input type="text" formControlName="college" class="form-control">
+        <div class="text-danger" *ngIf="submittedReactive && reactiveForm.get('college')?.invalid">College is required.</div>
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label d-block">Placement</label>
+        <div class="form-check form-check-inline">
+          <input class="form-check-input" type="radio" formControlName="placement" [value]="true">
+          <label class="form-check-label">Yes</label>
+        </div>
+        <div class="form-check form-check-inline">
+          <input class="form-check-input" type="radio" formControlName="placement" [value]="false">
+          <label class="form-check-label">No</label>
+        </div>
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label">Comment</label>
+        <textarea formControlName="comment" class="form-control" rows="3"></textarea>
+      </div>
+
+      <button class="btn btn-success me-2" type="submit">Submit</button>
+      <button type="button" class="btn btn-outline-secondary" (click)="resetReactive()">Reset</button>
+    </form>
+
+    <div class="mt-3">
+      <div *ngIf="reactiveResult" class="form-result">
+        <strong>Submitted (Reactive):</strong>
+        <pre>{{reactiveResult | json}}</pre>
+      </div>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,89 @@
+<div class="cart-container">
+  <h1>Shopping Cart</h1>
+
+  <div *ngIf="loading" class="loading">Loading cart...</div>
+
+  <div *ngIf="!loading && cart">
+    <div *ngIf="cart.items && cart.items.length > 0">
+      <div class="cart-content">
+        <div class="cart-items">
+          <div class="cart-item" *ngFor="let item of cart.items">
+            <div class="item-image">
+              <img [src]="item.book?.imageUrl || 'assets/default-book.jpg'" [alt]="item.book?.title">
+            </div>
+
+            <div class="item-details">
+              <h3>{{ item.book?.title }}</h3>
+              <p class="author">by {{ item.book?.author }}</p>
+              <p class="price">${{ item.book?.price | number:'1.2-2' }}</p>
+            </div>
+
+            <div class="item-quantity">
+              <label>Quantity:</label>
+              <div class="quantity-controls">
+                <button (click)="updateQuantity(item, item.quantity - 1)" class="qty-btn">-</button>
+                <input 
+                  type="number" 
+                  [value]="item.quantity" 
+                  (change)="updateQuantity(item, +$any($event.target).value)"
+                  min="1"
+                  [max]="item.book?.stockQuantity || 99"
+                  class="qty-input">
+                <button (click)="updateQuantity(item, item.quantity + 1)" class="qty-btn">+</button>
+              </div>
+            </div>
+
+            <div class="item-subtotal">
+              <p class="subtotal-label">Subtotal:</p>
+              <p class="subtotal-amount">${{ getSubtotal(item) | number:'1.2-2' }}</p>
+            </div>
+
+            <div class="item-actions">
+              <button (click)="removeItem(item)" class="btn btn-danger btn-sm">Remove</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="cart-summary">
+          <h2>Order Summary</h2>
+          
+          <div class="summary-row">
+            <span>Items ({{ cart.items.length }}):</span>
+            <span>${{ getCartTotal() | number:'1.2-2' }}</span>
+          </div>
+
+          <div class="summary-row">
+            <span>Shipping:</span>
+            <span>FREE</span>
+          </div>
+
+          <div class="summary-row total">
+            <span>Total:</span>
+            <span>${{ getCartTotal() | number:'1.2-2' }}</span>
+          </div>
+
+          <button 
+            class="btn btn-primary btn-block btn-large" 
+            (click)="checkout()"
+            [disabled]="processingCheckout">
+            {{ processingCheckout ? 'Processing...' : 'Proceed to Checkout' }}
+          </button>
+
+          <button class="btn btn-secondary btn-block" routerLink="/books">
+            Continue Shopping
+          </button>
+
+          <button class="btn btn-link btn-block" (click)="clearCart()">
+            Clear Cart
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div *ngIf="!cart.items || cart.items.length === 0" class="empty-cart">
+      <h2>Your cart is empty</h2>
+      <p>Start adding some books to your cart!</p>
+      <button class="btn btn-primary" routerLink="/books">Browse Books</button>
+    </div>
+  </div>
+</div>

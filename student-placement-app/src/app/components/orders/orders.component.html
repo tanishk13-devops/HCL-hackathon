@@ -1,0 +1,58 @@
+<div class="orders-container">
+  <h1>My Orders</h1>
+
+  <div *ngIf="loading" class="loading">Loading orders...</div>
+
+  <div *ngIf="!loading && orders.length > 0" class="orders-list">
+    <div class="order-card" *ngFor="let order of orders">
+      <div class="order-header">
+        <div class="order-info">
+          <h3>Order #{{ order.orderId }}</h3>
+          <p class="order-date">Placed on {{ order.orderDate | date:'medium' }}</p>
+        </div>
+        <div class="order-status">
+          <span class="status-badge" [ngClass]="getStatusClass(order.status)">
+            {{ order.status }}
+          </span>
+        </div>
+      </div>
+
+      <div class="order-items">
+        <div class="order-item" *ngFor="let item of order.items">
+          <img [src]="item.book?.imageUrl || 'assets/default-book.jpg'" [alt]="item.book?.title">
+          <div class="item-info">
+            <h4>{{ item.book?.title }}</h4>
+            <p class="author">by {{ item.book?.author }}</p>
+            <p class="quantity">Quantity: {{ item.quantity }}</p>
+          </div>
+          <div class="item-price">
+            ${{ item.price || item.book?.price | number:'1.2-2' }}
+          </div>
+        </div>
+      </div>
+
+      <div class="order-footer">
+        <div class="order-total">
+          <strong>Total: ${{ order.totalAmount | number:'1.2-2' }}</strong>
+        </div>
+        <div class="order-actions">
+          <button class="btn btn-primary btn-sm" (click)="viewOrderDetails(order.orderId)">
+            View Details
+          </button>
+          <button 
+            *ngIf="canCancelOrder(order)"
+            class="btn btn-danger btn-sm" 
+            (click)="cancelOrder(order.orderId)">
+            Cancel Order
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div *ngIf="!loading && orders.length === 0" class="no-orders">
+    <h2>No orders yet</h2>
+    <p>Start shopping to see your orders here!</p>
+    <button class="btn btn-primary" routerLink="/books">Browse Books</button>
+  </div>
+</div>

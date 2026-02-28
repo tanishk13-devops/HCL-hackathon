@@ -1,0 +1,88 @@
+<div class="admin-books">
+  <div class="header">
+    <h1>Manage Books</h1>
+    <button class="btn btn-primary" (click)="openAddForm()">Add New Book</button>
+  </div>
+
+  <div *ngIf="loading" class="loading">Loading books...</div>
+
+  <!-- Book Form Modal -->
+  <div class="modal" *ngIf="showForm">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>{{ editingBook ? 'Edit Book' : 'Add New Book' }}</h2>
+        <button class="close-btn" (click)="closeForm()">×</button>
+      </div>
+
+      <form [formGroup]="bookForm" (ngSubmit)="submitForm()">
+        <div class="form-group">
+          <label>Title *</label>
+          <input type="text" formControlName="title" class="form-control">
+        </div>
+
+        <div class="form-group">
+          <label>Author *</label>
+          <input type="text" formControlName="author" class="form-control">
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label>Price *</label>
+            <input type="number" formControlName="price" class="form-control" step="0.01">
+          </div>
+
+          <div class="form-group">
+            <label>Stock Quantity *</label>
+            <input type="number" formControlName="stockQuantity" class="form-control">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Image URL</label>
+          <input type="text" formControlName="imageUrl" class="form-control">
+        </div>
+
+        <div class="form-group">
+          <label>Description *</label>
+          <textarea formControlName="description" class="form-control" rows="4"></textarea>
+        </div>
+
+        <div class="form-actions">
+          <button type="button" class="btn btn-secondary" (click)="closeForm()">Cancel</button>
+          <button type="submit" class="btn btn-primary" [disabled]="bookForm.invalid">
+            {{ editingBook ? 'Update' : 'Create' }}
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Books Table -->
+  <div class="table-container" *ngIf="!loading">
+    <table>
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Title</th>
+          <th>Author</th>
+          <th>Price</th>
+          <th>Stock</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let book of books">
+          <td>{{ book.bookId }}</td>
+          <td>{{ book.title }}</td>
+          <td>{{ book.author }}</td>
+          <td>${{ book.price | number:'1.2-2' }}</td>
+          <td>{{ book.stockQuantity }}</td>
+          <td class="actions">
+            <button class="btn btn-sm btn-secondary" (click)="openEditForm(book)">Edit</button>
+            <button class="btn btn-sm btn-danger" (click)="deleteBook(book)">Delete</button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>

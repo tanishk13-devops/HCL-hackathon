@@ -1,0 +1,83 @@
+<div class="admin-dashboard">
+  <h1>Admin Dashboard</h1>
+
+  <div *ngIf="loading" class="loading">Loading dashboard...</div>
+
+  <div *ngIf="!loading">
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-icon books">📚</div>
+        <div class="stat-content">
+          <h3>{{ stats.totalBooks }}</h3>
+          <p>Total Books</p>
+        </div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-icon orders">📦</div>
+        <div class="stat-content">
+          <h3>{{ stats.totalOrders }}</h3>
+          <p>Total Orders</p>
+        </div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-icon pending">⏳</div>
+        <div class="stat-content">
+          <h3>{{ stats.pendingOrders }}</h3>
+          <p>Pending Orders</p>
+        </div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-icon revenue">💰</div>
+        <div class="stat-content">
+          <h3>${{ stats.totalRevenue | number:'1.2-2' }}</h3>
+          <p>Total Revenue</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="quick-actions">
+      <h2>Quick Actions</h2>
+      <div class="action-buttons">
+        <button class="btn btn-primary" (click)="navigateToBooks()">
+          Manage Books
+        </button>
+        <button class="btn btn-secondary" (click)="navigateToOrders()">
+          Manage Orders
+        </button>
+      </div>
+    </div>
+
+    <div class="recent-orders">
+      <h2>Recent Orders</h2>
+      <div class="table-container">
+        <table>
+          <thead>
+            <tr>
+              <th>Order ID</th>
+              <th>Date</th>
+              <th>Items</th>
+              <th>Total</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let order of recentOrders">
+              <td>#{{ order.orderId }}</td>
+              <td>{{ order.orderDate | date:'short' }}</td>
+              <td>{{ order.items?.length || 0 }} items</td>
+              <td>${{ order.totalAmount | number:'1.2-2' }}</td>
+              <td>
+                <span class="status-badge" [class]="'status-' + order.status.toLowerCase()">
+                  {{ order.status }}
+                </span>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>

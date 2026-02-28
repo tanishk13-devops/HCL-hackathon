@@ -1,0 +1,84 @@
+<div class="book-list-container">
+  <h1>Browse Books</h1>
+
+  <!-- Filters Section -->
+  <div class="filters-section">
+    <div class="filter-group">
+      <input 
+        type="text" 
+        [(ngModel)]="searchTerm" 
+        (input)="applyFilters()"
+        placeholder="Search by title or author..." 
+        class="form-control">
+    </div>
+
+    <div class="filter-group">
+      <select [(ngModel)]="selectedAuthor" (change)="applyFilters()" class="form-control">
+        <option value="">All Authors</option>
+        <option *ngFor="let author of authors" [value]="author">{{ author }}</option>
+      </select>
+    </div>
+
+    <div class="filter-group">
+      <input 
+        type="number" 
+        [(ngModel)]="minPrice" 
+        (input)="applyFilters()"
+        placeholder="Min Price" 
+        class="form-control">
+    </div>
+
+    <div class="filter-group">
+      <input 
+        type="number" 
+        [(ngModel)]="maxPrice" 
+        (input)="applyFilters()"
+        placeholder="Max Price" 
+        class="form-control">
+    </div>
+
+    <button class="btn btn-secondary" (click)="clearFilters()">Clear Filters</button>
+  </div>
+
+  <!-- Loading Spinner -->
+  <div *ngIf="loading" class="loading">Loading books...</div>
+
+  <!-- Books Grid -->
+  <div class="books-grid" *ngIf="!loading">
+    <div class="book-card" *ngFor="let book of filteredBooks">
+      <div class="book-image" (click)="viewDetails(book.bookId)">
+        <img [src]="book.imageUrl || 'assets/default-book.jpg'" [alt]="book.title">
+        <div class="stock-badge" [class.out-of-stock]="book.stockQuantity <= 0">
+          {{ book.stockQuantity > 0 ? 'In Stock' : 'Out of Stock' }}
+        </div>
+      </div>
+      
+      <div class="book-info">
+        <h3 (click)="viewDetails(book.bookId)">{{ book.title }}</h3>
+        <p class="author">by {{ book.author }}</p>
+        <p class="description">{{ book.description | slice:0:100 }}{{ book.description.length > 100 ? '...' : '' }}</p>
+        
+        <div class="rating" *ngIf="book.averageRating">
+          <span class="stars">★★★★★</span>
+          <span class="rating-value">{{ book.averageRating | number:'1.1-1' }}</span>
+          <span class="review-count">({{ book.reviewCount }} reviews)</span>
+        </div>
+
+        <div class="book-footer">
+          <span class="price">${{ book.price | number:'1.2-2' }}</span>
+          <button 
+            class="btn btn-primary" 
+            (click)="addToCart(book)"
+            [disabled]="book.stockQuantity <= 0">
+            {{ book.stockQuantity > 0 ? 'Add to Cart' : 'Sold Out' }}
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- No Results -->
+  <div *ngIf="!loading && filteredBooks.length === 0" class="no-results">
+    <p>No books found matching your criteria.</p>
+  </div>
+</div>

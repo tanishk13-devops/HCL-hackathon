@@ -1,0 +1,62 @@
+<div class="admin-orders">
+  <h1>Manage Orders</h1>
+
+  <div class="filters">
+    <label>Filter by Status:</label>
+    <div class="filter-buttons">
+      <button 
+        *ngFor="let status of statuses"
+        class="filter-btn"
+        [class.active]="selectedStatus === status || (selectedStatus === '' && status === 'All')"
+        (click)="filterByStatus(status)">
+        {{ status }}
+      </button>
+    </div>
+  </div>
+
+  <div *ngIf="loading" class="loading">Loading orders...</div>
+
+  <div class="table-container" *ngIf="!loading">
+    <table>
+      <thead>
+        <tr>
+          <th>Order ID</th>
+          <th>Date</th>
+          <th>Items</th>
+          <th>Total Amount</th>
+          <th>Status</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let order of filteredOrders">
+          <td>#{{ order.orderId }}</td>
+          <td>{{ order.orderDate | date:'short' }}</td>
+          <td>{{ order.items?.length || 0 }} items</td>
+          <td>${{ order.totalAmount | number:'1.2-2' }}</td>
+          <td>
+            <span class="status-badge" [ngClass]="getStatusClass(order.status)">
+              {{ order.status }}
+            </span>
+          </td>
+          <td>
+            <select 
+              class="status-select"
+              [value]="order.status"
+              (change)="updateOrderStatus(order, $any($event.target).value)">
+              <option value="Pending">Pending</option>
+              <option value="Confirmed">Confirmed</option>
+              <option value="Shipped">Shipped</option>
+              <option value="Delivered">Delivered</option>
+              <option value="Cancelled">Cancelled</option>
+            </select>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div *ngIf="filteredOrders.length === 0" class="no-orders">
+      <p>No orders found.</p>
+    </div>
+  </div>
+</div>
