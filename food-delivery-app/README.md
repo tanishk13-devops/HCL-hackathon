@@ -26,7 +26,7 @@ Use the included `render.yaml` to deploy both frontend and backend so anyone vis
 - Backend CORS can be controlled with `CORS__ALLOWED_ORIGINS` (comma-separated origins).
 - Swagger in hosted environments is controlled by `EnableSwagger` (set to `true` in `render.yaml`).
 - Frontend production API URL is injected at build time through `API_URL` in Render.
-- Data is currently seeded from in-memory DB on backend startup, so data resets on restart.
+- Backend is configured for PostgreSQL. On Render, database connection is provisioned via `ziggy-db` in `render.yaml`.
 
 ## Features
 

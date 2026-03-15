@@ -3,6 +3,7 @@ using FoodDeliveryAPI.Data;
 using FoodDeliveryAPI.Models;
 using System.Text.Json.Serialization;
 using Microsoft.AspNetCore.HttpOverrides;
+using Npgsql;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -15,9 +16,23 @@ builder.Services.AddControllers()
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-// Add DbContext - Use InMemory for development
+// Add DbContext - Use PostgreSQL
+var rawDatabaseUrl = builder.Configuration["DATABASE_URL"];
+var defaultConnection = builder.Configuration.GetConnectionString("DefaultConnection");
+
+var postgresConnectionString =
+    !string.IsNullOrWhiteSpace(rawDatabaseUrl)
+        ? ConvertDatabaseUrlToConnectionString(rawDatabaseUrl)
+        : defaultConnection;
+
+if (string.IsNullOrWhiteSpace(postgresConnectionString))
+{
+    throw new InvalidOperationException(
+        "PostgreSQL connection string is missing. Configure DATABASE_URL or ConnectionStrings:DefaultConnection.");
+}
+
 builder.Services.AddDbContext<FoodDeliveryDbContext>(options =>
-    options.UseInMemoryDatabase("FoodDeliveryDB"));
+    options.UseNpgsql(postgresConnectionString));
 
 // Add CORS
 builder.Services.AddCors(options =>
@@ -104,4 +119,30 @@ catch (Exception ex)
 {
     Console.WriteLine($"FATAL ERROR: {ex}");
     throw;
+}
+
+static string ConvertDatabaseUrlToConnectionString(string databaseUrl)
+{
+    // Render-style value: postgres://user:password@host:5432/database
+    if (!Uri.TryCreate(databaseUrl, UriKind.Absolute, out var uri))
+    {
+        return databaseUrl;
+    }
+
+    var userInfo = uri.UserInfo.Split(':', 2);
+    var username = Uri.UnescapeDataString(userInfo[0]);
+    var password = userInfo.Length > 1 ? Uri.UnescapeDataString(userInfo[1]) : string.Empty;
+    var database = uri.AbsolutePath.Trim('/');
+
+    var builder = new NpgsqlConnectionStringBuilder
+    {
+        Host = uri.Host,
+        Port = uri.Port > 0 ? uri.Port : 5432,
+        Username = username,
+        Password = password,
+        Database = database,
+        SslMode = SslMode.Require
+    };
+
+    return builder.ConnectionString;
 }

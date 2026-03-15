@@ -1,4 +1,9 @@
 services:
+  - type: pserv
+    name: ziggy-db
+    plan: free
+    ipAllowList: []
+
   - type: web
     name: ziggy-api
     env: docker
@@ -14,6 +19,10 @@ services:
         value: "true"
       - key: CORS__ALLOWED_ORIGINS
         value: https://ziggy-frontend.onrender.com
+      - key: ConnectionStrings__DefaultConnection
+        fromDatabase:
+          name: ziggy-db
+          property: connectionString
 
   - type: web
     name: ziggy-frontend
