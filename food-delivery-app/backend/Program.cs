@@ -98,14 +98,14 @@ try
             {
                 new Food { Name = "Biryani", Description = "Fragrant basmati rice cooked with aromatic spices", Price = 250, Category = "Rice Dishes", ImageUrl = "https://images.pexels.com/photos/12737656/pexels-photo-12737656.jpeg?auto=compress&cs=tinysrgb&w=1200" },
                 new Food { Name = "Butter Chicken", Description = "Tender chicken simmered in creamy tomato gravy", Price = 350, Category = "Curries", ImageUrl = "https://images.pexels.com/photos/7625056/pexels-photo-7625056.jpeg?auto=compress&cs=tinysrgb&w=1200" },
-                new Food { Name = "Paneer Tikka", Description = "Char-grilled paneer with smoky spices", Price = 200, Category = "Appetizers", ImageUrl = "https://images.pexels.com/photos/5410400/pexels-photo-5410400.jpeg?auto=compress&cs=tinysrgb&w=1200" },
+                new Food { Name = "Paneer Tikka", Description = "Char-grilled paneer with smoky spices", Price = 200, Category = "Appetizers", ImageUrl = "https://images.unsplash.com/photo-1599487488170-d11ec9c172f0?q=80&w=1200" },
                 new Food { Name = "Tandoori Chicken", Description = "Classic tandoor roasted chicken with herbs", Price = 300, Category = "Grilled", ImageUrl = "https://images.pexels.com/photos/616354/pexels-photo-616354.jpeg?auto=compress&cs=tinysrgb&w=1200" },
                 new Food { Name = "Garlic Naan", Description = "Oven baked naan brushed with garlic butter", Price = 50, Category = "Breads", ImageUrl = "https://images.pexels.com/photos/9797029/pexels-photo-9797029.jpeg?auto=compress&cs=tinysrgb&w=1200" },
-                new Food { Name = "Samosa", Description = "Golden pastry filled with spiced potatoes", Price = 30, Category = "Appetizers", ImageUrl = "https://images.pexels.com/photos/2474661/pexels-photo-2474661.jpeg?auto=compress&cs=tinysrgb&w=1200" },
-                new Food { Name = "Dal Makhani", Description = "Slow-cooked lentils finished with cream", Price = 150, Category = "Curries", ImageUrl = "https://images.pexels.com/photos/1640774/pexels-photo-1640774.jpeg?auto=compress&cs=tinysrgb&w=1200" },
+                new Food { Name = "Samosa", Description = "Golden pastry filled with spiced potatoes", Price = 30, Category = "Appetizers", ImageUrl = "https://images.unsplash.com/photo-1601050690117-94f5f6fa5f30?q=80&w=1200" },
+                new Food { Name = "Dal Makhani", Description = "Slow-cooked lentils finished with cream", Price = 150, Category = "Curries", ImageUrl = "https://images.unsplash.com/photo-1546833999-b9f581a1996d?q=80&w=1200" },
                 new Food { Name = "Chole Bhature", Description = "Spiced chickpeas served with fluffy bhature", Price = 120, Category = "Street Food", ImageUrl = "https://images.unsplash.com/photo-1626082927389-6cd097cdc6ec?q=80&w=1200" },
-                new Food { Name = "Shahi Tukda", Description = "Royal bread pudding with saffron & nuts", Price = 80, Category = "Desserts", ImageUrl = "https://images.unsplash.com/photo-1601050690597-df0568f70950?q=80&w=1200" },
-                new Food { Name = "Gulab Jamun", Description = "Soft milk dumplings soaked in rose syrup", Price = 60, Category = "Desserts", ImageUrl = "https://images.pexels.com/photos/11059539/pexels-photo-11059539.jpeg?auto=compress&cs=tinysrgb&w=1200" }
+                new Food { Name = "Shahi Tukda", Description = "Royal bread pudding with saffron & nuts", Price = 80, Category = "Desserts", ImageUrl = "https://images.unsplash.com/photo-1631452180519-c014fe946bc7?q=80&w=1200" },
+                new Food { Name = "Gulab Jamun", Description = "Soft milk dumplings soaked in rose syrup", Price = 60, Category = "Desserts", ImageUrl = "https://images.unsplash.com/photo-1666190092159-3171cf0fbb12?q=80&w=1200" }
             };
 
             context.Foods.AddRange(foods);

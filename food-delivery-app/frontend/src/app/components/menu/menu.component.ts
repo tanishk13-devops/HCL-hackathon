@@ -79,7 +79,8 @@ export class MenuComponent implements OnInit {
       .replace(/-/g, ' ')
       .replace(/\s+/g, ' ');
 
-    return imageMap[key] || food.imageUrl || 'https://via.placeholder.com/800x600?text=Ziggy+Food';
+    // Prefer image URL coming from API/DB so admin or DB updates are reflected immediately.
+    return food.imageUrl || imageMap[key] || 'https://via.placeholder.com/800x600?text=Ziggy+Food';
   }
 
   addToCart(food: Food): void {
