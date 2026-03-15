@@ -3,7 +3,7 @@ export interface User {
   email: string;
   name: string;
   phone?: string;
-  role: 'Customer' | 'Admin';
+  role: 'Customer' | 'Admin' | 'DeliveryAgent';
   token?: string;
 }
 
@@ -16,5 +16,6 @@ export interface RegisterRequest {
   name: string;
   email: string;
   password: string;
-  phone: string;
+  phone?: string;
+  role?: 'Customer' | 'Admin' | 'DeliveryAgent';
 }

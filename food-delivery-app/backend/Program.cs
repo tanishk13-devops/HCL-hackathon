@@ -1,8 +1,15 @@
 using Microsoft.EntityFrameworkCore;
 using FoodDeliveryAPI.Data;
 using FoodDeliveryAPI.Models;
+using FoodDeliveryAPI.Repositories.Implementations;
+using FoodDeliveryAPI.Repositories.Interfaces;
+using FoodDeliveryAPI.Services.Implementations;
+using FoodDeliveryAPI.Services.Interfaces;
 using System.Text.Json.Serialization;
 using Microsoft.AspNetCore.HttpOverrides;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Tokens;
+using System.Text;
 using Npgsql;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -43,6 +50,48 @@ builder.Services.AddDbContext<FoodDeliveryDbContext>(options =>
         options.UseNpgsql(postgresConnectionString!);
     }
 });
+
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options =>
+    {
+        var jwtKey = builder.Configuration["Jwt:Key"] ?? "ThisIsADevelopmentOnlySuperSecretJwtKey123!";
+        var issuer = builder.Configuration["Jwt:Issuer"] ?? "FoodDeliveryAPI";
+        var audience = builder.Configuration["Jwt:Audience"] ?? "FoodDeliveryAPI.Client";
+
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuer = true,
+            ValidateAudience = true,
+            ValidateIssuerSigningKey = true,
+            ValidateLifetime = true,
+            ValidIssuer = issuer,
+            ValidAudience = audience,
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey))
+        };
+    });
+
+builder.Services.AddAuthorization();
+
+// Repository registrations
+builder.Services.AddScoped<IUserRepository, UserRepository>();
+builder.Services.AddScoped<IRestaurantRepository, RestaurantRepository>();
+builder.Services.AddScoped<IFoodRepository, FoodRepository>();
+builder.Services.AddScoped<ICartRepository, CartRepository>();
+builder.Services.AddScoped<IOrderRepository, OrderRepository>();
+builder.Services.AddScoped<IAddressRepository, AddressRepository>();
+builder.Services.AddScoped<IPaymentRepository, PaymentRepository>();
+builder.Services.AddScoped<IReviewRepository, ReviewRepository>();
+
+// Service registrations
+builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<ITokenService, TokenService>();
+builder.Services.AddScoped<IRestaurantService, RestaurantService>();
+builder.Services.AddScoped<IFoodService, FoodService>();
+builder.Services.AddScoped<ICartService, CartService>();
+builder.Services.AddScoped<IOrderService, OrderService>();
+builder.Services.AddScoped<IAddressService, AddressService>();
+builder.Services.AddScoped<IPaymentService, PaymentService>();
+builder.Services.AddScoped<IReviewService, ReviewService>();
 
 // Add CORS
 builder.Services.AddCors(options =>
@@ -91,6 +140,7 @@ try
     }
 
     app.UseCors("AllowAll");
+    app.UseAuthentication();
     app.UseAuthorization();
     app.MapControllers();
 
@@ -100,54 +150,120 @@ try
         var services = scope.ServiceProvider;
         var context = services.GetRequiredService<FoodDeliveryDbContext>();
         context.Database.EnsureCreated();
-        var authenticSamosaImage = "https://www.cubesnjuliennes.com/wp-content/uploads/2020/08/Best-Indian-Punjabi-Samosa-Recipe.jpg";
-        var authenticDalMakhaniImage = "https://sinfullyspicy.com/wp-content/uploads/2015/03/3-1.jpg";
-        var authenticCholeBhatureImage = "https://madhurasrecipe.com/wp-content/uploads/2025/09/MR-Chole-Bhature-featured.jpg";
-        var authenticShahiTukdaImage = "https://palatesdesire.com/wp-content/uploads/2021/05/shahi-tukda-recipe@palates-desire-1.jpg";
 
-        // Add sample foods if none exist
-        if (!context.Foods.Any())
+        if (!context.Users.Any())
         {
-            var foods = new[]
-            {
-                new Food { Name = "Biryani", Description = "Fragrant basmati rice cooked with aromatic spices", Price = 250, Category = "Rice Dishes", ImageUrl = "https://images.pexels.com/photos/12737656/pexels-photo-12737656.jpeg?auto=compress&cs=tinysrgb&w=1200" },
-                new Food { Name = "Butter Chicken", Description = "Tender chicken simmered in creamy tomato gravy", Price = 350, Category = "Curries", ImageUrl = "https://images.pexels.com/photos/7625056/pexels-photo-7625056.jpeg?auto=compress&cs=tinysrgb&w=1200" },
-                new Food { Name = "Paneer Tikka", Description = "Char-grilled paneer with smoky spices", Price = 200, Category = "Appetizers", ImageUrl = "https://images.unsplash.com/photo-1599487488170-d11ec9c172f0?q=80&w=1200" },
-                new Food { Name = "Tandoori Chicken", Description = "Classic tandoor roasted chicken with herbs", Price = 300, Category = "Grilled", ImageUrl = "https://images.pexels.com/photos/616354/pexels-photo-616354.jpeg?auto=compress&cs=tinysrgb&w=1200" },
-                new Food { Name = "Garlic Naan", Description = "Oven baked naan brushed with garlic butter", Price = 50, Category = "Breads", ImageUrl = "https://images.pexels.com/photos/9797029/pexels-photo-9797029.jpeg?auto=compress&cs=tinysrgb&w=1200" },
-                new Food { Name = "Samosa", Description = "Golden pastry filled with spiced potatoes", Price = 30, Category = "Appetizers", ImageUrl = authenticSamosaImage },
-                new Food { Name = "Dal Makhani", Description = "Slow-cooked lentils finished with cream", Price = 150, Category = "Curries", ImageUrl = authenticDalMakhaniImage },
-                new Food { Name = "Chole Bhature", Description = "Spiced chickpeas served with fluffy bhature", Price = 120, Category = "Street Food", ImageUrl = authenticCholeBhatureImage },
-                new Food { Name = "Shahi Tukda", Description = "Royal bread pudding with saffron & nuts", Price = 80, Category = "Desserts", ImageUrl = authenticShahiTukdaImage },
-                new Food { Name = "Gulab Jamun", Description = "Soft milk dumplings soaked in rose syrup", Price = 60, Category = "Desserts", ImageUrl = "https://images.unsplash.com/photo-1666190092159-3171cf0fbb12?q=80&w=1200" }
-            };
-
-            context.Foods.AddRange(foods);
+            context.Users.AddRange(
+                new User
+                {
+                    Name = "Platform Admin",
+                    Email = "admin@ziggy.com",
+                    PasswordHash = BCrypt.Net.BCrypt.HashPassword("Admin@123"),
+                    Role = "Admin"
+                },
+                new User
+                {
+                    Name = "Rahul Customer",
+                    Email = "customer@ziggy.com",
+                    PasswordHash = BCrypt.Net.BCrypt.HashPassword("Customer@123"),
+                    Role = "Customer"
+                },
+                new User
+                {
+                    Name = "Aman Rider",
+                    Email = "delivery@ziggy.com",
+                    PasswordHash = BCrypt.Net.BCrypt.HashPassword("Delivery@123"),
+                    Role = "DeliveryAgent"
+                }
+            );
             context.SaveChanges();
         }
 
-        // Keep selected dish images aligned even when records already exist.
-        var imageOverrides = new Dictionary<string, string>
+        if (!context.FoodCategories.Any())
         {
-            ["Samosa"] = authenticSamosaImage,
-            ["Dal Makhani"] = authenticDalMakhaniImage,
-            ["Chole Bhature"] = authenticCholeBhatureImage,
-            ["Shahi Tukda"] = authenticShahiTukdaImage
-        };
-
-        var needsSave = false;
-        foreach (var food in context.Foods.Where(f => imageOverrides.Keys.Contains(f.Name)))
-        {
-            var targetImage = imageOverrides[food.Name];
-            if (food.ImageUrl != targetImage)
-            {
-                food.ImageUrl = targetImage;
-                needsSave = true;
-            }
+            context.FoodCategories.AddRange(
+                new FoodCategory { Name = "Main Course" },
+                new FoodCategory { Name = "Desserts" },
+                new FoodCategory { Name = "Starters" },
+                new FoodCategory { Name = "Beverages" }
+            );
+            context.SaveChanges();
         }
 
-        if (needsSave)
+        if (!context.Restaurants.Any())
         {
+            context.Restaurants.AddRange(
+                new Restaurant
+                {
+                    Name = "Spice Route",
+                    Description = "North Indian favorites, biryanis, and tandoor specials.",
+                    Location = "Noida Sector 18",
+                    Rating = 4.4m,
+                    ImageUrl = "https://images.unsplash.com/photo-1552566626-52f8b828add9?q=80&w=1200"
+                },
+                new Restaurant
+                {
+                    Name = "Coastal Bowl",
+                    Description = "South Indian and coastal comfort food.",
+                    Location = "Gurgaon CyberHub",
+                    Rating = 4.3m,
+                    ImageUrl = "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?q=80&w=1200"
+                }
+            );
+            context.SaveChanges();
+        }
+
+        if (!context.Foods.Any())
+        {
+            var mainCourseCategoryId = context.FoodCategories.First(c => c.Name == "Main Course").Id;
+            var dessertsCategoryId = context.FoodCategories.First(c => c.Name == "Desserts").Id;
+            var startersCategoryId = context.FoodCategories.First(c => c.Name == "Starters").Id;
+
+            var spiceRouteId = context.Restaurants.First(r => r.Name == "Spice Route").Id;
+            var coastalBowlId = context.Restaurants.First(r => r.Name == "Coastal Bowl").Id;
+
+            context.Foods.AddRange(
+                new Food
+                {
+                    Name = "Butter Chicken",
+                    Description = "Classic creamy tomato gravy with tender chicken.",
+                    Price = 349,
+                    CategoryId = mainCourseCategoryId,
+                    RestaurantId = spiceRouteId,
+                    ImageUrl = "https://images.pexels.com/photos/7625056/pexels-photo-7625056.jpeg?auto=compress&cs=tinysrgb&w=1200",
+                    IsAvailable = true
+                },
+                new Food
+                {
+                    Name = "Paneer Tikka",
+                    Description = "Tandoor roasted paneer cubes and peppers.",
+                    Price = 229,
+                    CategoryId = startersCategoryId,
+                    RestaurantId = spiceRouteId,
+                    ImageUrl = "https://images.unsplash.com/photo-1599487488170-d11ec9c172f0?q=80&w=1200",
+                    IsAvailable = true
+                },
+                new Food
+                {
+                    Name = "Prawn Curry",
+                    Description = "Coconut-based spicy prawn curry.",
+                    Price = 399,
+                    CategoryId = mainCourseCategoryId,
+                    RestaurantId = coastalBowlId,
+                    ImageUrl = "https://images.unsplash.com/photo-1604908176997-4315f57d89b4?q=80&w=1200",
+                    IsAvailable = true
+                },
+                new Food
+                {
+                    Name = "Gulab Jamun",
+                    Description = "Soft milk dumplings in rose sugar syrup.",
+                    Price = 89,
+                    CategoryId = dessertsCategoryId,
+                    RestaurantId = coastalBowlId,
+                    ImageUrl = "https://images.unsplash.com/photo-1666190092159-3171cf0fbb12?q=80&w=1200",
+                    IsAvailable = true
+                }
+            );
             context.SaveChanges();
         }
     }

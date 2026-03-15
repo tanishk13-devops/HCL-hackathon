@@ -36,7 +36,7 @@ export class RegisterComponent {
     this.loading = true;
     this.error = '';
     this.success = '';
-    this.authService.register({ name, email, password, phone })
+    this.authService.register({ name, email, password, phone, role: 'Customer' })
       .subscribe({
         next: () => {
           this.loading = false;

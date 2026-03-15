@@ -23,8 +23,7 @@
       </div>
 
       <div class="meta">
-        <p><strong>Customer:</strong> {{ order.customerName }}</p>
-        <p><strong>Address:</strong> {{ order.deliveryAddress }}</p>
+        <p><strong>Address:</strong> {{ order.address?.street }}, {{ order.address?.city }}</p>
         <p><strong>Total:</strong> ₹{{ order.totalAmount }}</p>
       </div>
     </div>

@@ -9,20 +9,14 @@ namespace FoodDeliveryAPI.Models
 
         public int OrderId { get; set; }
 
-        public int FoodId { get; set; }
-
-        [StringLength(100)]
-        public string FoodName { get; set; } = string.Empty;
+        public int FoodItemId { get; set; }
 
         public int Quantity { get; set; }
 
         [Column(TypeName = "decimal(10,2)")]
         public decimal Price { get; set; }
 
-        [Column(TypeName = "decimal(10,2)")]
-        public decimal Subtotal { get; set; }
-
-        // Navigation properties
-        public virtual Order? Order { get; set; }
+        public Order? Order { get; set; }
+        public Food? FoodItem { get; set; }
     }
 }

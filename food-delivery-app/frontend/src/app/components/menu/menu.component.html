@@ -1,12 +1,13 @@
 <div class="menu-container">
-  <h1>Menu</h1>
+  <h1>Restaurant Menu</h1>
   
   <div class="filters">
-    <label>Filter by Category:</label>
+    <label>Filter by Category (client-side):</label>
     <select [(ngModel)]="selectedCategory" (change)="onCategoryChange()">
       <option value="">All Categories</option>
-      <option *ngFor="let category of categories" [value]="category">{{ category }}</option>
+      <option *ngFor="let category of categories">{{ category }}</option>
     </select>
+    <a routerLink="/cart" class="btn-add">Go To Cart</a>
   </div>
 
   <div *ngIf="loading" class="loading">Loading menu...</div>
@@ -17,12 +18,12 @@
       <div class="food-image" [style.background-image]="'url(' + getFoodImage(food) + ')' "></div>
       <div class="food-details">
         <h3>{{ food.name }}</h3>
-        <p class="category">{{ food.category }}</p>
+        <p class="category">{{ food.category?.name || food.categoryName || 'Category' }}</p>
         <p class="description">{{ food.description }}</p>
         <div class="footer">
           <span class="price">₹{{ food.price }}</span>
-          <button (click)="addToCart(food)" [disabled]="!food.availability" class="btn-add">
-            {{ food.availability ? 'Add to Cart' : 'Out of Stock' }}
+          <button (click)="addToCart(food)" [disabled]="food.isAvailable === false" class="btn-add">
+            {{ food.isAvailable === false ? 'Out of Stock' : 'Add to Cart' }}
           </button>
         </div>
       </div>

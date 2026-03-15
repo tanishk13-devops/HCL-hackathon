@@ -19,14 +19,10 @@
 
       <div class="order-details">
         <div class="detail-item">
-          <strong>Customer:</strong> {{ order.customerName }}
+          <strong>Delivery Address:</strong>
+          {{ order.address?.street }}, {{ order.address?.city }}, {{ order.address?.state }} - {{ order.address?.pincode }}
         </div>
-        <div class="detail-item">
-          <strong>Phone:</strong> {{ order.customerPhone }}
-        </div>
-        <div class="detail-item">
-          <strong>Delivery Address:</strong> {{ order.deliveryAddress }}
-        </div>
+        <div class="detail-item"><strong>Payment:</strong> {{ order.payment?.paymentMethod }} ({{ order.payment?.paymentStatus }})</div>
       </div>
 
       <div class="order-items">
@@ -37,15 +33,13 @@
               <th>Item</th>
               <th>Qty</th>
               <th>Price</th>
-              <th>Subtotal</th>
             </tr>
           </thead>
           <tbody>
             <tr *ngFor="let item of order.items">
-              <td>{{ item.foodName }}</td>
+              <td>{{ item.foodItem?.name || ('Item #' + item.foodItemId) }}</td>
               <td>{{ item.quantity }}</td>
               <td>₹{{ item.price }}</td>
-              <td>₹{{ item.subtotal }}</td>
             </tr>
           </tbody>
         </table>
@@ -53,10 +47,6 @@
 
       <div class="order-total">
         <strong>Total: ₹{{ order.totalAmount }}</strong>
-      </div>
-
-      <div *ngIf="order.specialNotes" class="special-notes">
-        <strong>Special Notes:</strong> {{ order.specialNotes }}
       </div>
 
       <div class="track-row">

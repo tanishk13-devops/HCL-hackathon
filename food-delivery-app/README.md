@@ -1,322 +1,165 @@
-# Online Food Delivery System
+# Ziggy - Production-Style Online Food Delivery System
 
-A complete web application for online food delivery with Angular frontend and ASP.NET Core backend.
+This project is upgraded to a Swiggy/Zomato-style architecture with restaurant-first browsing, JWT auth, role-based APIs, cart + checkout + payment flow, and admin operations.
 
-## Live Demo
+## Stack
 
-- App: `https://ziggy-frontend.onrender.com`
-- API Swagger: `https://ziggy-api.onrender.com/swagger`
+- Frontend: Angular 17
+- Backend: ASP.NET Core Web API + EF Core
+- Database: PostgreSQL by default (compatible patterns for SQL Server/MySQL)
+- Auth: JWT + Roles (`Admin`, `Customer`, `DeliveryAgent`)
+- Deployment: Vercel (frontend), Render/Azure (backend)
+- CI/CD: GitHub Actions ([.github/workflows/ci-cd.yml](.github/workflows/ci-cd.yml))
 
-Update these links after your first deployment if your Render service names are different.
+## Architecture
 
-## Public Access From GitHub
+Controller -> Service Layer -> Repository -> EF Core -> Database
 
-Use the included `render.yaml` to deploy both frontend and backend so anyone visiting your GitHub can open and test Ziggy.
+Backend folders:
 
-### One-time setup
+- Controllers
+- Services/Interfaces, Services/Implementations
+- Repositories/Interfaces, Repositories/Implementations
+- Models
+- DTOs
+- Helpers
 
-1. Push this `food-delivery-app` folder to GitHub.
-2. In Render, click `New +` -> `Blueprint`.
-3. Connect your GitHub repository and choose the `food-delivery-app/render.yaml` blueprint.
-4. Create both services when prompted.
-5. After deploy completes, copy your real URLs and update the `Live Demo` section above.
+## Core Modules Delivered
 
-### Notes
-
-- Backend CORS can be controlled with `CORS__ALLOWED_ORIGINS` (comma-separated origins).
-- Swagger in hosted environments is controlled by `EnableSwagger` (set to `true` in `render.yaml`).
-- Frontend production API URL is injected at build time through `API_URL` in Render.
-- Backend is configured for PostgreSQL. On Render, database connection is provisioned via `ziggy-db` in `render.yaml`.
-
-## Features
-
-### Customer Features
-- Browse food menu by category
-- Add items to cart
-- Place orders
-- Track order status
-- View order history
-
-### Admin Features
-- Manage food items (Add/Update/Delete)
-- Monitor all orders
-- Update order status
-- Track delivery activity
-
-### Technical Features
-- Real-time cart updates
-- Order status tracking
-- User authentication
-- Responsive design
-- RESTful API
-
-## Project Structure
-
-```
-food-delivery-app/
-├── frontend/              # Angular application
-│   ├── src/
-│   │   ├── app/
-│   │   │   ├── components/
-│   │   │   ├── services/
-│   │   │   ├── models/
-│   │   │   └── guards/
-│   │   └── index.html
-│   └── package.json
-├── backend/               # ASP.NET Core API
-│   ├── Models/
-│   ├── Controllers/
-│   ├── Data/
-│   ├── Services/
-│   └── Program.cs
-├── .gitlab-ci.yml         # CI/CD Pipeline
-└── README.md
-```
-
-## Tech Stack
-
-### Frontend
-- **Framework**: Angular 17
-- **Language**: TypeScript
-- **Styling**: CSS3
-- **HTTP Client**: HttpClientModule
-
-### Backend
-- **Framework**: ASP.NET Core 8.0
-- **Language**: C#
-- **Database**: SQL Server / MySQL
-- **ORM**: Entity Framework Core
-
-### DevOps
-- **Version Control**: Git
-- **CI/CD**: GitLab CI/CD
-- **Containerization**: Docker (Optional)
-
-## Installation & Setup
-
-### Prerequisites
-- Node.js 18+
-- .NET SDK 8.0
-- SQL Server or MySQL
-- Git
-
-### Backend Setup
-
-1. Navigate to backend folder:
-```bash
-cd backend
-```
-
-2. Update connection string in `appsettings.json`:
-```json
-"ConnectionStrings": {
-  "DefaultConnection": "Your_Connection_String_Here"
-}
-```
-
-3. Restore dependencies:
-```bash
-dotnet restore
-```
-
-4. Create database:
-```bash
-dotnet ef database update
-```
-
-5. Run the API:
-```bash
-dotnet run
-```
-
-API will be available at `https://localhost:7001`
-
-### Frontend Setup
-
-1. Navigate to frontend folder:
-```bash
-cd frontend
-```
-
-2. Install dependencies:
-```bash
-npm install
-```
-
-3. Start development server:
-```bash
-npm start
-```
-
-Application will be available at `http://localhost:4200`
+1. Restaurant module (`Restaurant` -> many `Food` items)
+2. Food menu management (admin create/update/delete)
+3. Cart module (`Cart`, `CartItem`)
+4. Order module + status workflow (`Pending -> Accepted -> Preparing -> OutForDelivery -> Delivered`)
+5. Address module (multiple addresses per user)
+6. Payment module (`UPI`, `Card`, `CashOnDelivery`)
+7. Reviews & ratings
+8. JWT Authentication + Authorization with roles
+9. Admin dashboard APIs
+10. Angular pages for customer/admin flows
 
 ## API Endpoints
 
-### Foods
-- `GET /api/foods` - Get all foods
-- `GET /api/foods/{id}` - Get food by ID
-- `GET /api/foods/category/{category}` - Get foods by category
-- `POST /api/foods` - Create food (Admin)
-- `PUT /api/foods/{id}` - Update food (Admin)
-- `DELETE /api/foods/{id}` - Delete food (Admin)
+### Auth
+- `POST /api/auth/register`
+- `POST /api/auth/login`
+
+### Restaurants
+- `GET /api/restaurants?search=`
+- `GET /api/restaurants/{id}`
+- `POST /api/restaurants` (Admin)
+- `PUT /api/restaurants/{id}` (Admin)
+- `DELETE /api/restaurants/{id}` (Admin)
+
+### Food Items
+- `GET /api/food-items/restaurant/{restaurantId}`
+- `GET /api/food-items/{id}`
+- `POST /api/food-items` (Admin)
+- `PUT /api/food-items/{id}` (Admin)
+- `DELETE /api/food-items/{id}` (Admin)
+
+### Cart
+- `GET /api/cart`
+- `POST /api/cart/items`
+- `PUT /api/cart/items/{foodItemId}`
+- `DELETE /api/cart/items/{foodItemId}`
 
 ### Orders
-- `GET /api/orders` - Get all orders
-- `GET /api/orders/{id}` - Get order by ID
-- `GET /api/orders/customer/{customerId}` - Get customer orders
-- `POST /api/orders` - Place new order
-- `PATCH /api/orders/{id}/status` - Update order status
-- `DELETE /api/orders/{id}` - Cancel order
+- `POST /api/orders` (Place order from cart)
+- `GET /api/orders/my-history`
+- `GET /api/orders/{id}`
+- `GET /api/orders/{id}/track`
+- `GET /api/orders` (Admin/DeliveryAgent)
+- `PATCH /api/orders/{id}/status` (Admin/DeliveryAgent)
 
-### Customers
-- `GET /api/customers` - Get all customers
-- `GET /api/customers/{id}` - Get customer details
-- `POST /api/customers` - Create customer
-- `PUT /api/customers/{id}` - Update customer
-- `DELETE /api/customers/{id}` - Delete customer
+### Addresses
+- `GET /api/addresses`
+- `POST /api/addresses`
+- `DELETE /api/addresses/{id}`
 
-### Authentication
-- `POST /api/auth/register` - Register new user
-- `POST /api/auth/login` - Login user
+### Payments
+- `GET /api/payments/order/{orderId}`
+- `PATCH /api/payments/order/{orderId}` (Admin)
 
-## CI/CD Pipeline
+### Reviews
+- `GET /api/reviews/restaurant/{restaurantId}`
+- `POST /api/reviews`
 
-The project includes a GitLab CI/CD pipeline with the following stages:
+### Admin
+- `GET /api/admin/dashboard`
+- `GET /api/admin/orders`
+- `GET /api/admin/customer-activity`
 
-### 1. Restore Stage
-- Restores .NET dependencies
-- Installs npm packages
+## Database Schema (High Level)
 
-### 2. Build Stage
-- Builds ASP.NET Core API
-- Builds Angular application
+- `Users` (Id, Name, Email, PasswordHash, Role, CreatedAt)
+- `Restaurants` (Id, Name, Description, Location, Rating, ImageUrl, CreatedAt)
+- `FoodCategories` (Id, Name)
+- `Foods` (Id, Name, Description, Price, CategoryId, RestaurantId, ImageUrl, IsAvailable, CreatedAt)
+- `Carts` (Id, UserId, CreatedAt)
+- `CartItems` (Id, CartId, FoodItemId, Quantity, Price)
+- `Addresses` (Id, UserId, Street, City, State, Pincode)
+- `Orders` (Id, UserId, AddressId, TotalAmount, Status, CreatedAt)
+- `OrderItems` (Id, OrderId, FoodItemId, Quantity, Price)
+- `Payments` (Id, OrderId, PaymentMethod, PaymentStatus, Amount, CreatedAt)
+- `Reviews` (Id, UserId, RestaurantId, Rating, Comment, CreatedAt)
 
-### 3. Test Stage
-- Runs unit tests for backend
-- Runs unit tests for frontend
+## Angular Service Files
 
-### 4. Publish Stage
-- Publishes API artifacts
-- Builds distribution package
-- Optional Docker image build
+- [src/app/services/auth.service.ts](frontend/src/app/services/auth.service.ts)
+- [src/app/services/restaurant.service.ts](frontend/src/app/services/restaurant.service.ts)
+- [src/app/services/food.service.ts](frontend/src/app/services/food.service.ts)
+- [src/app/services/cart.service.ts](frontend/src/app/services/cart.service.ts)
+- [src/app/services/address.service.ts](frontend/src/app/services/address.service.ts)
+- [src/app/services/order.service.ts](frontend/src/app/services/order.service.ts)
+- [src/app/services/payment.service.ts](frontend/src/app/services/payment.service.ts) *(can be added similarly as needed)*
+- [src/app/services/review.service.ts](frontend/src/app/services/review.service.ts)
+- [src/app/services/admin.service.ts](frontend/src/app/services/admin.service.ts)
 
-### Running Pipeline Locally
+## Sample Seed Users
 
-```bash
-# Backend build & test
-cd backend
-dotnet restore
-dotnet build
-dotnet test
+- Admin: `admin@ziggy.com` / `Admin@123`
+- Customer: `customer@ziggy.com` / `Customer@123`
+- DeliveryAgent: `delivery@ziggy.com` / `Delivery@123`
 
-# Frontend build & test
-cd ../frontend
-npm install
-npm run build
-npm test
-```
+## Local Run
 
-## Database Schema
+Backend:
 
-### Food Table
-- Id (int, PK)
-- Name (string)
-- Description (string)
-- Price (decimal)
-- Category (string)
-- ImageUrl (string, nullable)
-- Availability (bool)
-- CreatedAt (datetime)
-- UpdatedAt (datetime)
+1. `cd backend`
+2. `dotnet restore`
+3. `dotnet run`
 
-### Order Table
-- Id (int, PK)
-- CustomerId (int, FK)
-- CustomerName (string)
-- CustomerPhone (string)
-- TotalAmount (decimal)
-- Status (string)
-- CreatedAt (datetime)
-- UpdatedAt (datetime)
+Frontend:
 
-### OrderItem Table
-- Id (int, PK)
-- OrderId (int, FK)
-- FoodId (int)
-- Quantity (int)
-- Price (decimal)
-- Subtotal (decimal)
+1. `cd frontend`
+2. `npm install`
+3. `npm start`
 
-## Usage Guide
+## Deployment
 
-### For Customers
-1. Register/Login with email and password
-2. Browse menu by category
-3. Add items to cart
-4. Proceed to checkout
-5. Enter delivery details
-6. Place order
-7. Track order status
+### Frontend -> Vercel
 
-### For Admin
-1. Login with admin credentials
-2. Go to Admin Dashboard
-3. Manage food items (Add/Edit/Delete)
-4. View all orders
-5. Update order status
+- Build command: `npm run build`
+- Output: `dist/food-delivery-app`
+- Set `environment.prod.ts` API URL to backend URL
 
-## Performance Considerations
+### Backend -> Render/Azure
 
-- Cart stored in browser localStorage
-- Pagination ready for large datasets
-- Optimized queries with Entity Framework
-- Response caching enabled
-- CORS enabled for frontend communication
+- Configure `DATABASE_URL` or `ConnectionStrings__DefaultConnection`
+- Configure JWT values:
+  - `Jwt__Key`
+  - `Jwt__Issuer`
+  - `Jwt__Audience`
+- Optional CORS env: `CORS__ALLOWED_ORIGINS`
 
-## Security Features
+### CI/CD
 
-- Password hashing with SHA256
-- Email validation
-- Input validation on both frontend and backend
-- HTTPS enabled
-- CORS policy configured
+GitHub Actions pipeline includes:
 
-## Future Enhancements
-
-- Payment gateway integration
-- Real-time order notifications (SignalR)
-- Email notifications
-- Rating and review system
-- Delivery tracking with map
-- Mobile app version
-- Advanced analytics dashboard
-- Multi-language support
-
-## Troubleshooting
-
-### Database Connection Issues
-- Check connection string in `appsettings.json`
-- Ensure SQL Server is running
-- Verify credentials
-
-### Frontend Not Loading
-- Clear browser cache
-- Check if Angular development server is running
-- Verify API URL in environment.ts
-
-### API Not Responding
-- Check if .NET API is running
-- Verify port 7001 is available
-- Check firewall settings
-
-## Contributing
-
-1. Clone the repository
-2. Create a feature branch
-3. Make changes
-4. Test thoroughly
-5. Commit with clear messages
-6. Push and create pull request
+1. Restore dependencies
+2. Build backend/frontend
+3. Run tests
+4. Publish and upload artifacts
 
 ## License
 

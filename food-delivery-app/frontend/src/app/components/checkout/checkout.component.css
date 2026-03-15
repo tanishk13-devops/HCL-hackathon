@@ -1,0 +1,8 @@
+.checkout-page { padding:16px; }
+.layout { display:grid; grid-template-columns:1.2fr .8fr; gap:20px; }
+@media (max-width:900px){ .layout { grid-template-columns:1fr; } }
+section { background:#fff; border:1px solid #eee; border-radius:12px; padding:14px; }
+input, select { width:100%; padding:8px; margin:6px 0; border:1px solid #ddd; border-radius:8px; }
+button { margin-top:10px; background:#ff5a1f; color:#fff; border:none; border-radius:8px; padding:10px 14px; }
+.address-card { border:1px solid #eee; border-radius:8px; padding:8px; margin-bottom:8px; }
+.line { display:flex; justify-content:space-between; margin:8px 0; }

@@ -1,6 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { ActivatedRoute, RouterModule } from '@angular/router';
 import { FoodService } from '../../services/food.service';
 import { CartService } from '../../services/cart.service';
 import { Food } from '../../models/food.model';
@@ -9,32 +10,37 @@ import { CartItem } from '../../models/cart.model';
 @Component({
   selector: 'app-menu',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, RouterModule],
   templateUrl: './menu.component.html',
   styleUrls: ['./menu.component.css']
 })
 export class MenuComponent implements OnInit {
+  restaurantId = 1;
   foods: Food[] = [];
   categories: string[] = [];
-  selectedCategory: string = '';
+  selectedCategory = '';
   filteredFoods: Food[] = [];
   loading = true;
 
   constructor(
     private foodService: FoodService,
-    private cartService: CartService
+    private cartService: CartService,
+    private route: ActivatedRoute
   ) {}
 
   ngOnInit(): void {
-    this.loadFoods();
+    this.route.paramMap.subscribe(params => {
+      this.restaurantId = Number(params.get('restaurantId') || 1);
+      this.loadFoods();
+    });
   }
 
   loadFoods(): void {
-    this.foodService.getFoods().subscribe({
+    this.foodService.getRestaurantMenu(this.restaurantId).subscribe({
       next: (foods) => {
         this.foods = foods;
         this.extractCategories();
-        this.filterByCategory();
+        this.filteredFoods = foods;
         this.loading = false;
       },
       error: () => {
@@ -44,12 +50,12 @@ export class MenuComponent implements OnInit {
   }
 
   extractCategories(): void {
-    this.categories = [...new Set(this.foods.map(f => f.category))];
+    this.categories = [...new Set(this.foods.map(f => f.category?.name || f.categoryName).filter(Boolean) as string[])];
   }
 
   filterByCategory(): void {
     if (this.selectedCategory) {
-      this.filteredFoods = this.foods.filter(f => f.category === this.selectedCategory);
+      this.filteredFoods = this.foods.filter(f => (f.category?.name || f.categoryName) === this.selectedCategory);
     } else {
       this.filteredFoods = this.foods;
     }
@@ -86,15 +92,13 @@ export class MenuComponent implements OnInit {
   addToCart(food: Food): void {
     if (food.id) {
       const cartItem: CartItem = {
-        foodId: food.id,
-        foodName: food.name,
+        foodItemId: food.id,
         price: food.price,
-        quantity: 1,
-        subtotal: food.price,
-        imageUrl: this.getFoodImage(food)
+        quantity: 1
       };
-      this.cartService.addToCart(cartItem);
-      alert(`${food.name} added to cart!`);
+      this.cartService.addToCart(cartItem).subscribe({
+        next: () => alert(`${food.name} added to cart!`)
+      });
     }
   }
 }

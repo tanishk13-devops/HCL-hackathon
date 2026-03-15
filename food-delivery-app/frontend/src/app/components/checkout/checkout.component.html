@@ -1,0 +1,42 @@
+<div class="checkout-page">
+  <h1>Checkout</h1>
+
+  <div class="layout">
+    <section>
+      <h3>Delivery Address</h3>
+      <div *ngFor="let a of addresses" class="address-card">
+        <label>
+          <input type="radio" name="addr" [value]="a.id" [(ngModel)]="selectedAddressId" />
+          {{ a.street }}, {{ a.city }}, {{ a.state }} - {{ a.pincode }}
+        </label>
+      </div>
+
+      <h4>Add Address</h4>
+      <input placeholder="Street" [(ngModel)]="newAddress.street" />
+      <input placeholder="City" [(ngModel)]="newAddress.city" />
+      <input placeholder="State" [(ngModel)]="newAddress.state" />
+      <input placeholder="Pincode" [(ngModel)]="newAddress.pincode" />
+      <button (click)="addAddress()">Add</button>
+
+      <h3>Payment Method</h3>
+      <select [(ngModel)]="paymentMethod">
+        <option>UPI</option>
+        <option>Card</option>
+        <option>CashOnDelivery</option>
+      </select>
+    </section>
+
+    <section>
+      <h3>Order Summary</h3>
+      <div *ngFor="let item of cart.cartItems" class="line">
+        <span>{{ item.foodItem?.name || ('Item #' + item.foodItemId) }} x {{ item.quantity }}</span>
+        <b>₹{{ item.price * item.quantity }}</b>
+      </div>
+      <hr/>
+      <h3>Total: ₹{{ total }}</h3>
+      <button [disabled]="loading || !cart.cartItems.length" (click)="placeOrder()">
+        {{ loading ? 'Placing...' : 'Place Order' }}
+      </button>
+    </section>
+  </div>
+</div>

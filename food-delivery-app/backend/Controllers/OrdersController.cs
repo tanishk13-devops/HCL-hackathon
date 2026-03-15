@@ -1,110 +1,95 @@
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using FoodDeliveryAPI.Models;
-using FoodDeliveryAPI.Data;
+using Microsoft.AspNetCore.Authorization;
+using FoodDeliveryAPI.DTOs;
+using FoodDeliveryAPI.Helpers;
+using FoodDeliveryAPI.Services.Interfaces;
 
 namespace FoodDeliveryAPI.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
+    [Authorize]
     public class OrdersController : ControllerBase
     {
-        private readonly FoodDeliveryDbContext _context;
+        private readonly IOrderService _orderService;
 
-        public OrdersController(FoodDeliveryDbContext context)
+        public OrdersController(IOrderService orderService)
         {
-            _context = context;
+            _orderService = orderService;
         }
 
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<Order>>> GetOrders()
+        [Authorize(Roles = "Admin,DeliveryAgent")]
+        public async Task<IActionResult> GetOrders()
         {
-            return await _context.Orders
-                .Include(o => o.Items)
-                .ToListAsync();
+            return Ok(await _orderService.GetAllOrdersAsync());
         }
 
         [HttpGet("{id}")]
-        public async Task<ActionResult<Order>> GetOrder(int id)
+        public async Task<IActionResult> GetOrder(int id)
         {
-            var order = await _context.Orders
-                .Include(o => o.Items)
-                .FirstOrDefaultAsync(o => o.Id == id);
+            var order = await _orderService.GetOrderByIdAsync(id);
 
             if (order == null)
                 return NotFound();
 
-            return order;
+            var userId = User.GetUserId();
+            var isAdmin = User.IsInRole("Admin") || User.IsInRole("DeliveryAgent");
+            if (!isAdmin && order.UserId != userId)
+            {
+                return Forbid();
+            }
+
+            return Ok(order);
         }
 
-        [HttpGet("customer/{customerId}")]
-        public async Task<ActionResult<IEnumerable<Order>>> GetOrdersByCustomer(int customerId)
+        [HttpGet("my-history")]
+        [Authorize(Roles = "Customer,Admin")]
+        public async Task<IActionResult> GetOrdersByCurrentCustomer()
         {
-            return await _context.Orders
-                .Where(o => o.CustomerId == customerId)
-                .Include(o => o.Items)
-                .ToListAsync();
+            var userId = User.GetUserId();
+            return Ok(await _orderService.GetOrderHistoryAsync(userId));
         }
 
         [HttpPost]
-        public async Task<ActionResult<Order>> CreateOrder(Order order)
+        [Authorize(Roles = "Customer")]
+        public async Task<IActionResult> PlaceOrder([FromBody] PlaceOrderRequest request)
         {
-            if (order.Items == null || !order.Items.Any())
-                return BadRequest("Order must include at least one item");
-
-            order.Status = string.IsNullOrWhiteSpace(order.Status) ? "Pending" : order.Status;
-            order.CreatedAt = DateTime.UtcNow;
-            order.UpdatedAt = DateTime.UtcNow;
-
-            foreach (var item in order.Items)
+            try
             {
-                item.Subtotal = item.Price * item.Quantity;
+                var userId = User.GetUserId();
+                var order = await _orderService.PlaceOrderAsync(userId, request);
+                return CreatedAtAction(nameof(GetOrder), new { id = order.Id }, order);
             }
-
-            _context.Orders.Add(order);
-            await _context.SaveChangesAsync();
-
-            var savedOrder = await _context.Orders
-                .Include(o => o.Items)
-                .FirstOrDefaultAsync(o => o.Id == order.Id);
-
-            return CreatedAtAction(nameof(GetOrder), new { id = order.Id }, savedOrder);
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(ex.Message);
+            }
         }
 
         [HttpPatch("{id}/status")]
+        [Authorize(Roles = "Admin,DeliveryAgent")]
         public async Task<IActionResult> UpdateOrderStatus(int id, [FromBody] UpdateOrderStatusRequest statusUpdate)
         {
-            var order = await _context.Orders.FindAsync(id);
-            if (order == null)
-                return NotFound();
-
-            if (string.IsNullOrWhiteSpace(statusUpdate.Status))
-                return BadRequest("Status is required");
-
-            order.Status = statusUpdate.Status;
-            order.UpdatedAt = DateTime.UtcNow;
-            await _context.SaveChangesAsync();
+            var ok = await _orderService.UpdateStatusAsync(id, statusUpdate.Status);
+            if (!ok) return BadRequest("Invalid transition or order not found.");
 
             return NoContent();
         }
 
-        [HttpDelete("{id}")]
-        public async Task<IActionResult> DeleteOrder(int id)
+        [HttpGet("{id}/track")]
+        public async Task<IActionResult> TrackOrder(int id)
         {
-            var order = await _context.Orders.FindAsync(id);
-            if (order == null)
-                return NotFound();
+            var order = await _orderService.GetOrderByIdAsync(id);
+            if (order == null) return NotFound();
 
-            order.Status = "Cancelled";
-            order.UpdatedAt = DateTime.UtcNow;
-            await _context.SaveChangesAsync();
-
-            return NoContent();
-        }
-
-        public class UpdateOrderStatusRequest
-        {
-            public string Status { get; set; } = string.Empty;
+            return Ok(new
+            {
+                order.Id,
+                order.Status,
+                Workflow = Helpers.OrderWorkflow.All,
+                order.CreatedAt
+            });
         }
     }
 }

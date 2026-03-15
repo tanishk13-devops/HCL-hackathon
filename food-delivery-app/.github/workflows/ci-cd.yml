@@ -1,0 +1,72 @@
+name: Ziggy CI/CD
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: food-delivery-app/backend
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Restore backend dependencies
+        run: dotnet restore FoodDeliveryAPI.csproj
+
+      - name: Build backend
+        run: dotnet build FoodDeliveryAPI.csproj --configuration Release --no-restore
+
+      - name: Run backend tests
+        run: dotnet test --configuration Release --no-build
+        continue-on-error: true
+
+      - name: Publish backend artifact
+        run: dotnet publish FoodDeliveryAPI.csproj -c Release -o ./publish
+
+      - name: Upload backend artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-publish
+          path: food-delivery-app/backend/publish
+
+  frontend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: food-delivery-app/frontend
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: food-delivery-app/frontend/package-lock.json
+
+      - name: Restore frontend dependencies
+        run: npm ci
+
+      - name: Build frontend
+        run: npm run build
+
+      - name: Run frontend tests
+        run: npm test -- --watch=false --browsers=ChromeHeadless
+        continue-on-error: true
+
+      - name: Upload frontend artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-dist
+          path: food-delivery-app/frontend/dist

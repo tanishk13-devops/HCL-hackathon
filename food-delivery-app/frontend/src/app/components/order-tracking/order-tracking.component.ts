@@ -16,7 +16,7 @@ export class OrderTrackingComponent implements OnInit {
   loading = true;
   orderId?: number;
 
-  steps = ['Pending', 'Packed', 'Out for Delivery', 'Delivered'];
+  steps = ['Pending', 'Accepted', 'Preparing', 'OutForDelivery', 'Delivered'];
 
   constructor(
     private orderService: OrderService,
@@ -33,10 +33,22 @@ export class OrderTrackingComponent implements OnInit {
 
   loadOrders(): void {
     this.loading = true;
-    this.orderService.getOrders().subscribe({
+    if (this.orderId) {
+      this.orderService.getOrderById(this.orderId).subscribe({
+        next: (order) => {
+          this.orders = [order];
+          this.loading = false;
+        },
+        error: () => {
+          this.loading = false;
+        }
+      });
+      return;
+    }
+
+    this.orderService.getMyOrders().subscribe({
       next: (orders) => {
-        const list = this.orderId ? orders.filter(o => o.id === this.orderId) : orders;
-        this.orders = list.sort((a, b) => (b.id || 0) - (a.id || 0));
+        this.orders = orders.sort((a, b) => (b.id || 0) - (a.id || 0));
         this.loading = false;
       },
       error: () => {
@@ -48,16 +60,15 @@ export class OrderTrackingComponent implements OnInit {
   getStepIndex(status: string): number {
     switch (status) {
       case 'Pending':
-      case 'Confirmed':
         return 0;
-      case 'Preparing':
-      case 'Packed':
-      case 'Ready':
+      case 'Accepted':
         return 1;
-      case 'Out for Delivery':
+      case 'Preparing':
         return 2;
-      case 'Delivered':
+      case 'OutForDelivery':
         return 3;
+      case 'Delivered':
+        return 4;
       default:
         return -1;
     }

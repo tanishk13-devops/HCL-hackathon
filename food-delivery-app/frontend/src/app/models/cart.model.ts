@@ -1,14 +1,15 @@
 export interface CartItem {
-  foodId: number;
-  foodName: string;
+  id?: number;
+  cartId?: number;
+  foodItemId: number;
+  foodItem?: { id: number; name: string; imageUrl?: string };
   price: number;
   quantity: number;
-  subtotal: number;
-  imageUrl?: string;
 }
 
 export interface Cart {
-  items: CartItem[];
-  totalItems: number;
-  totalAmount: number;
+  id?: number;
+  userId?: number;
+  createdAt?: string;
+  cartItems: CartItem[];
 }

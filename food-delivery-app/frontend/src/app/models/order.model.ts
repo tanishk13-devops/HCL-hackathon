@@ -1,22 +1,19 @@
 export interface OrderItem {
-  foodId: number;
-  foodName: string;
+  id?: number;
+  foodItemId: number;
+  foodItem?: { id: number; name: string; imageUrl?: string };
   quantity: number;
   price: number;
-  subtotal: number;
 }
 
 export interface Order {
   id?: number;
-  customerId: number;
-  customerName: string;
-  customerPhone: string;
-  customerAddress: string;
+  userId: number;
+  addressId: number;
   items: OrderItem[];
   totalAmount: number;
-  status: 'Pending' | 'Confirmed' | 'Preparing' | 'Packed' | 'Ready' | 'Out for Delivery' | 'Delivered' | 'Cancelled';
-  deliveryAddress: string;
-  specialNotes?: string;
+  status: 'Pending' | 'Accepted' | 'Preparing' | 'OutForDelivery' | 'Delivered';
+  address?: { street: string; city: string; state: string; pincode: string };
+  payment?: { paymentMethod: string; paymentStatus: string; amount: number };
   createdAt?: Date;
-  updatedAt?: Date;
 }

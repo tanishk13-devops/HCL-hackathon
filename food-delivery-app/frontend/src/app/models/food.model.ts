@@ -3,9 +3,11 @@ export interface Food {
   name: string;
   description: string;
   price: number;
+  categoryId?: number;
+  category?: { id: number; name: string };
+  restaurantId?: number;
   imageUrl?: string;
-  category: string;
-  availability: boolean;
+  categoryName?: string;
+  isAvailable?: boolean;
   createdAt?: Date;
-  updatedAt?: Date;
 }

@@ -1,73 +1,63 @@
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Authorization;
+using FoodDeliveryAPI.DTOs;
 using FoodDeliveryAPI.Models;
-using FoodDeliveryAPI.Data;
+using FoodDeliveryAPI.Services.Interfaces;
 
 namespace FoodDeliveryAPI.Controllers
 {
     [ApiController]
-    [Route("api/[controller]")]
+    [Route("api/food-items")]
     public class FoodsController : ControllerBase
     {
-        private readonly FoodDeliveryDbContext _context;
+        private readonly IFoodService _foodService;
 
-        public FoodsController(FoodDeliveryDbContext context)
+        public FoodsController(IFoodService foodService)
         {
-            _context = context;
+            _foodService = foodService;
         }
 
-        [HttpGet]
-        public async Task<ActionResult<IEnumerable<Food>>> GetFoods()
+        [HttpGet("restaurant/{restaurantId:int}")]
+        [AllowAnonymous]
+        public async Task<ActionResult<IEnumerable<Food>>> GetRestaurantMenu(int restaurantId, [FromQuery] int? categoryId)
         {
-            return await _context.Foods.ToListAsync();
+            return Ok(await _foodService.GetRestaurantMenuAsync(restaurantId, categoryId));
         }
 
         [HttpGet("{id}")]
+        [AllowAnonymous]
         public async Task<ActionResult<Food>> GetFood(int id)
         {
-            var food = await _context.Foods.FindAsync(id);
+            var food = await _foodService.GetByIdAsync(id);
             if (food == null)
                 return NotFound();
 
             return food;
         }
 
-        [HttpGet("category/{category}")]
-        public async Task<ActionResult<IEnumerable<Food>>> GetFoodsByCategory(string category)
-        {
-            return await _context.Foods
-                .Where(f => f.Category == category)
-                .ToListAsync();
-        }
-
         [HttpPost]
-        public async Task<ActionResult<Food>> CreateFood(Food food)
+        [Authorize(Roles = "Admin")]
+        public async Task<ActionResult<Food>> CreateFood([FromBody] FoodItemRequest request)
         {
-            _context.Foods.Add(food);
-            await _context.SaveChangesAsync();
+            var food = await _foodService.CreateAsync(request);
             return CreatedAtAction(nameof(GetFood), new { id = food.Id }, food);
         }
 
         [HttpPut("{id}")]
-        public async Task<IActionResult> UpdateFood(int id, Food food)
+        [Authorize(Roles = "Admin")]
+        public async Task<IActionResult> UpdateFood(int id, [FromBody] FoodItemRequest request)
         {
-            if (id != food.Id)
-                return BadRequest();
-
-            _context.Entry(food).State = EntityState.Modified;
-            await _context.SaveChangesAsync();
+            var ok = await _foodService.UpdateAsync(id, request);
+            if (!ok) return NotFound();
             return NoContent();
         }
 
         [HttpDelete("{id}")]
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> DeleteFood(int id)
         {
-            var food = await _context.Foods.FindAsync(id);
-            if (food == null)
-                return NotFound();
-
-            _context.Foods.Remove(food);
-            await _context.SaveChangesAsync();
+            var ok = await _foodService.DeleteAsync(id);
+            if (!ok) return NotFound();
             return NoContent();
         }
     }

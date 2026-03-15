@@ -1,0 +1,10 @@
+.restaurant-list-page { padding: 16px; }
+.header-row { display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap; }
+.search-box { display:flex; gap:8px; }
+.search-box input { min-width:240px; padding:8px; border-radius:8px; border:1px solid #ddd; }
+.search-box button { background:#ff5a1f; border:none; color:#fff; padding:8px 12px; border-radius:8px; }
+.grid { margin-top:16px; display:grid; grid-template-columns:repeat(auto-fill,minmax(260px,1fr)); gap:16px; }
+.card { text-decoration:none; color:inherit; border:1px solid #eee; border-radius:12px; overflow:hidden; background:#fff; box-shadow:0 6px 20px rgba(0,0,0,.06); }
+.card img { width:100%; height:160px; object-fit:cover; }
+.body { padding:12px; }
+.meta { display:flex; justify-content:space-between; color:#666; margin-top:8px; }

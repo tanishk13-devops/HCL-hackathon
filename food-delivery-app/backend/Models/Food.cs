@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace FoodDeliveryAPI.Models
 {
@@ -14,16 +15,22 @@ namespace FoodDeliveryAPI.Models
         public string Description { get; set; } = string.Empty;
 
         [Range(0.01, 10000)]
+        [Column(TypeName = "decimal(10,2)")]
         public decimal Price { get; set; }
 
-        [StringLength(50)]
-        public string Category { get; set; } = string.Empty;
+        public int CategoryId { get; set; }
+
+        public int RestaurantId { get; set; }
 
         public string? ImageUrl { get; set; }
 
-        public bool Availability { get; set; } = true;
+        public bool IsAvailable { get; set; } = true;
 
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
-        public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
+
+        public FoodCategory? Category { get; set; }
+        public Restaurant? Restaurant { get; set; }
+        public ICollection<OrderItem> OrderItems { get; set; } = new List<OrderItem>();
+        public ICollection<CartItem> CartItems { get; set; } = new List<CartItem>();
     }
 }

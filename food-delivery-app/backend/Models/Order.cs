@@ -7,36 +7,21 @@ namespace FoodDeliveryAPI.Models
     {
         public int Id { get; set; }
 
-        public int CustomerId { get; set; }
-
-        [Required]
-        [StringLength(100)]
-        public string CustomerName { get; set; } = string.Empty;
-
-        [StringLength(15)]
-        public string CustomerPhone { get; set; } = string.Empty;
-
-        [StringLength(500)]
-        public string CustomerAddress { get; set; } = string.Empty;
+        public int UserId { get; set; }
+        public int AddressId { get; set; }
 
         [Column(TypeName = "decimal(10,2)")]
         public decimal TotalAmount { get; set; }
 
         [Required]
-        [StringLength(50)]
+        [StringLength(40)]
         public string Status { get; set; } = "Pending";
 
-        [StringLength(500)]
-        public string DeliveryAddress { get; set; } = string.Empty;
-
-        [StringLength(500)]
-        public string? SpecialNotes { get; set; }
-
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
-        public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
 
-        // Navigation properties
-        public virtual Customer? Customer { get; set; }
-        public virtual ICollection<OrderItem>? Items { get; set; }
+        public User? User { get; set; }
+        public Address? Address { get; set; }
+        public ICollection<OrderItem> Items { get; set; } = new List<OrderItem>();
+        public Payment? Payment { get; set; }
     }
 }

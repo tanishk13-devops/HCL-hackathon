@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable, BehaviorSubject } from 'rxjs';
+import { Observable } from 'rxjs';
 import { Order } from '../models/order.model';
 import { environment } from '../../environments/environment';
 
@@ -12,11 +12,19 @@ export class OrderService {
 
   constructor(private http: HttpClient) {}
 
-  placeOrder(order: Order): Observable<Order> {
-    return this.http.post<Order>(this.apiUrl, order);
+  placeOrder(addressId: number, paymentMethod: string): Observable<Order> {
+    return this.http.post<Order>(this.apiUrl, { addressId, paymentMethod });
   }
 
   getOrders(): Observable<Order[]> {
+    return this.getMyOrders();
+  }
+
+  getMyOrders(): Observable<Order[]> {
+    return this.http.get<Order[]>(`${this.apiUrl}/my-history`);
+  }
+
+  getAllOrders(): Observable<Order[]> {
     return this.http.get<Order[]>(this.apiUrl);
   }
 
@@ -24,15 +32,11 @@ export class OrderService {
     return this.http.get<Order>(`${this.apiUrl}/${id}`);
   }
 
-  getOrdersByCustomerId(customerId: number): Observable<Order[]> {
-    return this.http.get<Order[]>(`${this.apiUrl}/customer/${customerId}`);
-  }
-
   updateOrderStatus(id: number, status: string): Observable<Order> {
     return this.http.patch<Order>(`${this.apiUrl}/${id}/status`, { status });
   }
 
-  cancelOrder(id: number): Observable<void> {
-    return this.http.delete<void>(`${this.apiUrl}/${id}`);
+  trackOrder(id: number): Observable<{ id: number; status: string; workflow: string[]; createdAt: string }> {
+    return this.http.get<{ id: number; status: string; workflow: string[]; createdAt: string }>(`${this.apiUrl}/${id}/track`);
   }
 }

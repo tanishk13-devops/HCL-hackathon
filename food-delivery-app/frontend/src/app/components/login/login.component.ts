@@ -35,7 +35,7 @@ export class LoginComponent {
         next: () => {
           this.loading = false;
           this.error = '';
-          this.router.navigate(['/menu']);
+          this.router.navigate(['/restaurants']);
         },
         error: (err) => {
           this.loading = false;
