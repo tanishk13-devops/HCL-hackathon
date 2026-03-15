@@ -1,0 +1,102 @@
+.tracking-container {
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: 24px;
+}
+
+h1 {
+  margin-bottom: 20px;
+  color: #222;
+}
+
+.loading,
+.no-orders {
+  text-align: center;
+  color: #777;
+  padding: 30px;
+}
+
+.no-orders a {
+  margin-left: 8px;
+  color: #ff5a00;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.tracking-list {
+  display: grid;
+  gap: 18px;
+}
+
+.track-card {
+  background: #fff;
+  border-radius: 14px;
+  padding: 18px;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.08);
+}
+
+.track-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 14px;
+}
+
+.status {
+  background: #fff4ec;
+  color: #ff5a00;
+  padding: 6px 12px;
+  border-radius: 999px;
+  font-weight: 700;
+  font-size: 12px;
+}
+
+.steps {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.step {
+  text-align: center;
+  opacity: 0.45;
+}
+
+.step.done {
+  opacity: 1;
+}
+
+.dot {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  margin: 0 auto 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #ddd;
+  color: #333;
+  font-weight: 700;
+}
+
+.step.done .dot {
+  background: #ff5a00;
+  color: #fff;
+}
+
+.label {
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.meta p {
+  margin: 6px 0;
+  color: #444;
+}
+
+@media (max-width: 700px) {
+  .steps {
+    grid-template-columns: 1fr 1fr;
+  }
+}

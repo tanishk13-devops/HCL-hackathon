@@ -1,0 +1,27 @@
+<header class="topbar">
+	<div class="brand" routerLink="/home">{{ title }}</div>
+
+	<nav class="nav-links">
+		<a routerLink="/home" routerLinkActive="active">Home</a>
+		<a routerLink="/menu" routerLinkActive="active">Menu</a>
+		<a routerLink="/cart" routerLinkActive="active">Cart</a>
+		<a routerLink="/orders" routerLinkActive="active">Orders</a>
+		<a routerLink="/order-tracking" routerLinkActive="active">Tracking</a>
+	</nav>
+
+	<div class="auth-actions" *ngIf="!authService.isLoggedIn(); else loggedInBlock">
+		<a routerLink="/login" class="btn btn-light">Login</a>
+		<a routerLink="/register" class="btn btn-solid">Sign Up</a>
+	</div>
+
+	<ng-template #loggedInBlock>
+		<div class="user-block">
+			<span class="welcome">Hi, {{ authService.getCurrentUser()?.name }}</span>
+			<button class="btn btn-solid" (click)="logout()">Logout</button>
+		</div>
+	</ng-template>
+</header>
+
+<main class="page-wrap">
+	<router-outlet></router-outlet>
+</main>

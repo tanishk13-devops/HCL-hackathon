@@ -1,0 +1,115 @@
+stages:
+  - restore
+  - build
+  - test
+  - publish
+
+variables:
+  DOTNET_VERSION: "8.0"
+  BACKEND_PATH: "backend"
+  FRONTEND_PATH: "frontend"
+
+# Backend Pipeline
+backend_restore:
+  stage: restore
+  image: mcr.microsoft.com/dotnet/sdk:8.0
+  script:
+    - cd $BACKEND_PATH
+    - dotnet restore
+  artifacts:
+    paths:
+      - $BACKEND_PATH/
+
+backend_build:
+  stage: build
+  image: mcr.microsoft.com/dotnet/sdk:8.0
+  dependencies:
+    - backend_restore
+  script:
+    - cd $BACKEND_PATH
+    - dotnet build --configuration Release --no-restore
+  artifacts:
+    paths:
+      - $BACKEND_PATH/bin/Release/
+
+backend_test:
+  stage: test
+  image: mcr.microsoft.com/dotnet/sdk:8.0
+  dependencies:
+    - backend_build
+  script:
+    - cd $BACKEND_PATH
+    - dotnet test --configuration Release --no-build
+  allow_failure: true
+
+backend_publish:
+  stage: publish
+  image: mcr.microsoft.com/dotnet/sdk:8.0
+  dependencies:
+    - backend_build
+  script:
+    - cd $BACKEND_PATH
+    - dotnet publish --configuration Release -o publish
+  artifacts:
+    paths:
+      - $BACKEND_PATH/publish/
+    expire_in: 30 days
+
+# Frontend Pipeline
+frontend_restore:
+  stage: restore
+  image: node:18
+  script:
+    - cd $FRONTEND_PATH
+    - npm install
+  artifacts:
+    paths:
+      - $FRONTEND_PATH/node_modules/
+
+frontend_build:
+  stage: build
+  image: node:18
+  dependencies:
+    - frontend_restore
+  script:
+    - cd $FRONTEND_PATH
+    - npm run build
+  artifacts:
+    paths:
+      - $FRONTEND_PATH/dist/
+
+frontend_test:
+  stage: test
+  image: node:18
+  dependencies:
+    - frontend_build
+  script:
+    - cd $FRONTEND_PATH
+    - npm test -- --watch=false --code-coverage
+  allow_failure: true
+
+frontend_publish:
+  stage: publish
+  image: node:18
+  dependencies:
+    - frontend_build
+  script:
+    - cd $FRONTEND_PATH
+    - ls -la dist/
+  artifacts:
+    paths:
+      - $FRONTEND_PATH/dist/
+    expire_in: 30 days
+
+# Docker build (Optional)
+docker_build:
+  stage: publish
+  image: docker:latest
+  services:
+    - docker:dind
+  script:
+    - docker build -t food-delivery-api:latest ./backend
+    - docker tag food-delivery-api:latest food-delivery-api:$CI_COMMIT_SHA
+  only:
+    - main
+  allow_failure: true

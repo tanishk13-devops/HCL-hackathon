@@ -1,0 +1,32 @@
+<div class="home-container">
+  <div class="hero-section">
+    <div class="brand-pill">Ziggy</div>
+    <h1>{{ title }}</h1>
+    <p>Real food. Delivered fast.</p>
+    <div class="cta-buttons">
+      <a routerLink="/menu" class="btn btn-primary">Explore Menu</a>
+      <a routerLink="/register" class="btn btn-secondary">Create Account</a>
+    </div>
+    <div class="hero-stats">
+      <div>
+        <span class="stat-value">30+</span>
+        <span class="stat-label">Top-rated dishes</span>
+      </div>
+      <div>
+        <span class="stat-value">20 min</span>
+        <span class="stat-label">Avg. delivery</span>
+      </div>
+      <div>
+        <span class="stat-value">4.8★</span>
+        <span class="stat-label">Customer rating</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="features">
+    <h2>Why Choose Ziggy?</h2>
+    <ul>
+      <li *ngFor="let feature of features">{{ feature }}</li>
+    </ul>
+  </div>
+</div>

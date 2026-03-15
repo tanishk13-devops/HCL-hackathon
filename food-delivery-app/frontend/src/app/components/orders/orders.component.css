@@ -1,0 +1,144 @@
+.orders-container {
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+h1 {
+  color: #333;
+  text-align: center;
+  margin-bottom: 30px;
+}
+
+.loading, .no-orders {
+  text-align: center;
+  padding: 40px;
+  font-size: 18px;
+  color: #999;
+}
+
+.orders-list {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.order-card {
+  background: white;
+  border-radius: 8px;
+  padding: 20px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.order-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 20px;
+  border-bottom: 2px solid #f0f0f0;
+  padding-bottom: 15px;
+}
+
+.order-header h3 {
+  margin: 0;
+  color: #333;
+}
+
+.order-header p {
+  margin: 5px 0 0 0;
+  color: #999;
+  font-size: 14px;
+}
+
+.status {
+  padding: 6px 12px;
+  border-radius: 20px;
+  color: white;
+  font-weight: bold;
+  font-size: 12px;
+  text-transform: uppercase;
+}
+
+.order-details {
+  background: #f9f9f9;
+  padding: 15px;
+  border-radius: 4px;
+  margin-bottom: 20px;
+}
+
+.detail-item {
+  margin: 8px 0;
+  color: #666;
+}
+
+.detail-item strong {
+  color: #333;
+  display: inline-block;
+  width: 150px;
+}
+
+.order-items {
+  margin-bottom: 20px;
+}
+
+.order-items h4 {
+  margin-top: 0;
+  color: #333;
+}
+
+.order-items table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.order-items th {
+  background-color: #f0f0f0;
+  padding: 10px;
+  text-align: left;
+  font-weight: bold;
+  border: 1px solid #ddd;
+}
+
+.order-items td {
+  padding: 10px;
+  border: 1px solid #ddd;
+}
+
+.order-total {
+  text-align: right;
+  padding: 15px;
+  background: #f9f9f9;
+  border-radius: 4px;
+  font-size: 18px;
+  color: #667eea;
+}
+
+.special-notes {
+  background: #fff9e6;
+  padding: 12px;
+  border-radius: 4px;
+  border-left: 4px solid #ff9800;
+  margin-top: 15px;
+  color: #666;
+  font-size: 14px;
+}
+
+.track-row {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 14px;
+}
+
+.track-btn {
+  background: #ff5a00;
+  color: #fff;
+  text-decoration: none;
+  border-radius: 999px;
+  padding: 8px 14px;
+  font-weight: 600;
+}
+
+.track-btn:hover {
+  background: #e44f00;
+}
