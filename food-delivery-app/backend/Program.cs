@@ -16,23 +16,33 @@ builder.Services.AddControllers()
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-// Add DbContext - Use PostgreSQL
+// Add DbContext - default to PostgreSQL, optional in-memory fallback for local dev
 var rawDatabaseUrl = builder.Configuration["DATABASE_URL"];
 var defaultConnection = builder.Configuration.GetConnectionString("DefaultConnection");
+var useInMemoryDatabase = builder.Configuration.GetValue<bool>("UseInMemoryDatabase");
 
 var postgresConnectionString =
     !string.IsNullOrWhiteSpace(rawDatabaseUrl)
         ? ConvertDatabaseUrlToConnectionString(rawDatabaseUrl)
         : defaultConnection;
 
-if (string.IsNullOrWhiteSpace(postgresConnectionString))
+if (!useInMemoryDatabase && string.IsNullOrWhiteSpace(postgresConnectionString))
 {
     throw new InvalidOperationException(
         "PostgreSQL connection string is missing. Configure DATABASE_URL or ConnectionStrings:DefaultConnection.");
 }
 
 builder.Services.AddDbContext<FoodDeliveryDbContext>(options =>
-    options.UseNpgsql(postgresConnectionString));
+{
+    if (useInMemoryDatabase)
+    {
+        options.UseInMemoryDatabase("FoodDeliveryDb");
+    }
+    else
+    {
+        options.UseNpgsql(postgresConnectionString!);
+    }
+});
 
 // Add CORS
 builder.Services.AddCors(options =>
@@ -90,6 +100,10 @@ try
         var services = scope.ServiceProvider;
         var context = services.GetRequiredService<FoodDeliveryDbContext>();
         context.Database.EnsureCreated();
+        var authenticSamosaImage = "https://www.cubesnjuliennes.com/wp-content/uploads/2020/08/Best-Indian-Punjabi-Samosa-Recipe.jpg";
+        var authenticDalMakhaniImage = "https://sinfullyspicy.com/wp-content/uploads/2015/03/3-1.jpg";
+        var authenticCholeBhatureImage = "https://madhurasrecipe.com/wp-content/uploads/2025/09/MR-Chole-Bhature-featured.jpg";
+        var authenticShahiTukdaImage = "https://palatesdesire.com/wp-content/uploads/2021/05/shahi-tukda-recipe@palates-desire-1.jpg";
 
         // Add sample foods if none exist
         if (!context.Foods.Any())
@@ -101,14 +115,39 @@ try
                 new Food { Name = "Paneer Tikka", Description = "Char-grilled paneer with smoky spices", Price = 200, Category = "Appetizers", ImageUrl = "https://images.unsplash.com/photo-1599487488170-d11ec9c172f0?q=80&w=1200" },
                 new Food { Name = "Tandoori Chicken", Description = "Classic tandoor roasted chicken with herbs", Price = 300, Category = "Grilled", ImageUrl = "https://images.pexels.com/photos/616354/pexels-photo-616354.jpeg?auto=compress&cs=tinysrgb&w=1200" },
                 new Food { Name = "Garlic Naan", Description = "Oven baked naan brushed with garlic butter", Price = 50, Category = "Breads", ImageUrl = "https://images.pexels.com/photos/9797029/pexels-photo-9797029.jpeg?auto=compress&cs=tinysrgb&w=1200" },
-                new Food { Name = "Samosa", Description = "Golden pastry filled with spiced potatoes", Price = 30, Category = "Appetizers", ImageUrl = "https://images.unsplash.com/photo-1601050690117-94f5f6fa5f30?q=80&w=1200" },
-                new Food { Name = "Dal Makhani", Description = "Slow-cooked lentils finished with cream", Price = 150, Category = "Curries", ImageUrl = "https://images.unsplash.com/photo-1546833999-b9f581a1996d?q=80&w=1200" },
-                new Food { Name = "Chole Bhature", Description = "Spiced chickpeas served with fluffy bhature", Price = 120, Category = "Street Food", ImageUrl = "https://images.unsplash.com/photo-1626082927389-6cd097cdc6ec?q=80&w=1200" },
-                new Food { Name = "Shahi Tukda", Description = "Royal bread pudding with saffron & nuts", Price = 80, Category = "Desserts", ImageUrl = "https://images.unsplash.com/photo-1631452180519-c014fe946bc7?q=80&w=1200" },
+                new Food { Name = "Samosa", Description = "Golden pastry filled with spiced potatoes", Price = 30, Category = "Appetizers", ImageUrl = authenticSamosaImage },
+                new Food { Name = "Dal Makhani", Description = "Slow-cooked lentils finished with cream", Price = 150, Category = "Curries", ImageUrl = authenticDalMakhaniImage },
+                new Food { Name = "Chole Bhature", Description = "Spiced chickpeas served with fluffy bhature", Price = 120, Category = "Street Food", ImageUrl = authenticCholeBhatureImage },
+                new Food { Name = "Shahi Tukda", Description = "Royal bread pudding with saffron & nuts", Price = 80, Category = "Desserts", ImageUrl = authenticShahiTukdaImage },
                 new Food { Name = "Gulab Jamun", Description = "Soft milk dumplings soaked in rose syrup", Price = 60, Category = "Desserts", ImageUrl = "https://images.unsplash.com/photo-1666190092159-3171cf0fbb12?q=80&w=1200" }
             };
 
             context.Foods.AddRange(foods);
+            context.SaveChanges();
+        }
+
+        // Keep selected dish images aligned even when records already exist.
+        var imageOverrides = new Dictionary<string, string>
+        {
+            ["Samosa"] = authenticSamosaImage,
+            ["Dal Makhani"] = authenticDalMakhaniImage,
+            ["Chole Bhature"] = authenticCholeBhatureImage,
+            ["Shahi Tukda"] = authenticShahiTukdaImage
+        };
+
+        var needsSave = false;
+        foreach (var food in context.Foods.Where(f => imageOverrides.Keys.Contains(f.Name)))
+        {
+            var targetImage = imageOverrides[food.Name];
+            if (food.ImageUrl != targetImage)
+            {
+                food.ImageUrl = targetImage;
+                needsSave = true;
+            }
+        }
+
+        if (needsSave)
+        {
             context.SaveChanges();
         }
     }
