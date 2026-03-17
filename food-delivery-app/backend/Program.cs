@@ -210,6 +210,7 @@ try
         }
 
         var dishImageRules = GetDishImageRules(app.Configuration);
+        var foodImageService = services.GetRequiredService<IFoodImageService>();
 
         if (context.Foods.Count() < 250)
         {
@@ -228,7 +229,8 @@ try
                 ? food.Name.Split(" - ", StringSplitOptions.RemoveEmptyEntries)[0]
                 : food.Name;
 
-            var expected = BuildDishImageUrl(baseDishName, food.Restaurant?.Name ?? "Restaurant", food.RestaurantId, food.Id % 10, 0, dishImageRules);
+            var expected = TryMatchConfiguredDishImageUrl(baseDishName, dishImageRules)
+                ?? await foodImageService.GetFoodImageUrlAsync(baseDishName);
             if (food.ImageUrl != expected)
             {
                 food.ImageUrl = expected;
@@ -409,7 +411,8 @@ static void SeedFoods(FoodDeliveryDbContext context, int targetFoodCount, IReadO
                 }
 
                 var price = basePrice + ((restaurant.Id + slot + cycle) % 12) * 10;
-                var dishImageUrl = BuildDishImageUrl(baseName, restaurant.Name, restaurant.Id, slot, cycle, dishImageRules);
+                var dishImageUrl = TryMatchConfiguredDishImageUrl(baseName, dishImageRules)
+                    ?? BuildFallbackDishImageUrl(baseName, restaurant.Name, restaurant.Id, slot, cycle);
                 newFoods.Add(new Food
                 {
                     Name = name,
@@ -437,7 +440,7 @@ static void SeedFoods(FoodDeliveryDbContext context, int targetFoodCount, IReadO
     }
 }
 
-static string BuildDishImageUrl(string dishName, string restaurantName, int restaurantId, int slot, int cycle, IReadOnlyList<(string Keyword, string Url)> dishImageRules)
+static string? TryMatchConfiguredDishImageUrl(string dishName, IReadOnlyList<(string Keyword, string Url)> dishImageRules)
 {
     var name = dishName.Trim().ToLowerInvariant();
 
@@ -449,31 +452,14 @@ static string BuildDishImageUrl(string dishName, string restaurantName, int rest
         }
     }
 
-    // Use stable, curated URLs by dish keyword to avoid repeated results from source.unsplash.
-    var image = name switch
-    {
-        var n when n.Contains("biryani") => "https://images.unsplash.com/photo-1563379091339-03246963d96c?auto=format&fit=crop&w=1200&q=80",
-        var n when n.Contains("butter chicken") => "https://images.unsplash.com/photo-1603894584373-5ac82b2ae398?auto=format&fit=crop&w=1200&q=80",
-        var n when n.Contains("paneer") => "https://images.unsplash.com/photo-1631452180519-c014fe946bc7?auto=format&fit=crop&w=1200&q=80",
-        var n when n.Contains("dal") => "https://images.unsplash.com/photo-1546833999-b9f581a1996d?auto=format&fit=crop&w=1200&q=80",
-        var n when n.Contains("mutton") || n.Contains("rogan") => "https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&w=1200&q=80",
-        var n when n.Contains("prawn") || n.Contains("fish") => "https://images.unsplash.com/photo-1611270629569-8b357cb88da9?auto=format&fit=crop&w=1200&q=80",
-        var n when n.Contains("noodles") => "https://images.unsplash.com/photo-1617622141675-d3005b9067c5?auto=format&fit=crop&w=1200&q=80",
-        var n when n.Contains("pasta") => "https://images.unsplash.com/photo-1621996346565-e3dbc646d9a9?auto=format&fit=crop&w=1200&q=80",
-        var n when n.Contains("spring roll") => "https://images.unsplash.com/photo-1601050690597-df0568f70950?auto=format&fit=crop&w=1200&q=80",
-        var n when n.Contains("fries") => "https://images.unsplash.com/photo-1573080496219-bb080dd4f877?auto=format&fit=crop&w=1200&q=80",
-        var n when n.Contains("wings") => "https://images.unsplash.com/photo-1527477396000-e27163b481c2?auto=format&fit=crop&w=1200&q=80",
-        var n when n.Contains("mushroom") => "https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&w=1200&q=80",
-        var n when n.Contains("gulab") || n.Contains("rasmalai") || n.Contains("kulfi") || n.Contains("shahi") => "https://images.unsplash.com/photo-1605197161470-5c1f7b1dbf5f?auto=format&fit=crop&w=1200&q=80",
-        var n when n.Contains("brownie") || n.Contains("chocolate") || n.Contains("mousse") => "https://images.unsplash.com/photo-1564355808539-22fda35bed7e?auto=format&fit=crop&w=1200&q=80",
-        var n when n.Contains("cheesecake") || n.Contains("tiramisu") => "https://images.unsplash.com/photo-1533134242443-d4fd215305ad?auto=format&fit=crop&w=1200&q=80",
-        var n when n.Contains("coffee") => "https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?auto=format&fit=crop&w=1200&q=80",
-        var n when n.Contains("tea") || n.Contains("chaas") || n.Contains("mojito") || n.Contains("soda") => "https://images.unsplash.com/photo-1461823385004-d7660947a7c0?auto=format&fit=crop&w=1200&q=80",
-        var n when n.Contains("shake") => "https://images.unsplash.com/photo-1577805947697-89e18249d767?auto=format&fit=crop&w=1200&q=80",
-        _ => "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=1200&q=80"
-    };
+    return null;
+}
 
-    return image;
+static string BuildFallbackDishImageUrl(string dishName, string restaurantName, int restaurantId, int slot, int cycle)
+{
+    var query = Uri.EscapeDataString($"{dishName} plated food");
+    var sig = Math.Abs(HashCode.Combine(restaurantName, dishName, restaurantId, slot, cycle)) % 100000;
+    return $"https://source.unsplash.com/1600x1000/?{query}&sig={sig}";
 }
 
 static List<(string Keyword, string Url)> GetDishImageRules(IConfiguration configuration)
@@ -483,6 +469,7 @@ static List<(string Keyword, string Url)> GetDishImageRules(IConfiguration confi
         .GetChildren()
         .Select(c => (Keyword: c.Key.Trim().ToLowerInvariant(), Url: (c.Value ?? string.Empty).Trim()))
         .Where(x => !string.IsNullOrWhiteSpace(x.Keyword) && Uri.IsWellFormedUriString(x.Url, UriKind.Absolute))
+        .OrderByDescending(x => x.Keyword.Length)
         .ToList();
 
     return rules;
