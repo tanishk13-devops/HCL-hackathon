@@ -1,19 +1,19 @@
-# Deployment Guide: Angular (Vercel) + API (Render) + Supabase PostgreSQL
+# Deployment Guide: Angular (Vercel) + API (Koyeb) + Supabase PostgreSQL
 
 This guide deploys:
 - Frontend (Angular) -> Vercel
-- Backend (.NET API) -> Render (Web Service)
+- Backend (.NET API) -> Koyeb (Docker Web Service)
 - Database -> Supabase PostgreSQL
 
 ---
 
 ## 1) Frontend deployment (Vercel)
 
-### What was prepared
-- SPA rewrite config added: `frontend/vercel.json`
-- Build-time API URL injection script added: `frontend/scripts/set-prod-api-url.cjs`
-- Vercel env variable template added: `frontend/.env.vercel.example`
-- Vercel build uses `npm run build:prod` (updates `environment.prod.ts` when `NG_APP_API_URL` exists)
+### What is already prepared
+- SPA rewrite config: `frontend/vercel.json`
+- Build-time API URL injection script: `frontend/scripts/set-prod-api-url.cjs`
+- Vercel env template: `frontend/.env.vercel.example`
+- Production build command: `npm run build:prod`
 
 ### Vercel settings
 - Root Directory: `frontend`
@@ -23,155 +23,88 @@ This guide deploys:
 - Output Directory: `dist/food-delivery-app`
 
 ### Vercel environment variable
-- `NG_APP_API_URL=https://YOUR-RENDER-SERVICE.onrender.com/api`
-
-### Deploy command (optional via CLI)
-```bash
-cd food-delivery-app/frontend
-npm i -g vercel
-vercel
-vercel --prod
-```
+- `NG_APP_API_URL=https://YOUR-KOYEB-SERVICE.koyeb.app/api`
 
 ---
 
-## 2) Backend deployment (Render)
+## 2) Backend deployment (Koyeb)
 
-### What was prepared
-- Render blueprint updated: `render.yaml`
-  - Deploys API only (no frontend/static service)
-  - Uses env vars for DB/JWT/CORS
-  - Includes `healthCheckPath: /health`
-- API binds to Render `PORT` variable in `backend/Program.cs`
-- Backend target framework aligned to .NET 8 in `backend/FoodDeliveryAPI.csproj`
-- Render env template added: `backend/.env.render.example`
+### What is already prepared
+- Docker-ready backend: `backend/Dockerfile`
+- API listens on provider `PORT` env var: `backend/Program.cs`
+- .NET 8 target: `backend/FoodDeliveryAPI.csproj`
+- Koyeb env template: `backend/.env.koyeb.example`
 
-### Render service configuration
-- Type: Web Service
-- Runtime: Docker (`backend/Dockerfile`)
-- Root directory: `backend`
+### Koyeb service setup
+1. Open Koyeb Dashboard -> Create App.
+2. Choose GitHub repository.
+3. Select this repo and branch (`main`).
+4. Service type: **Web Service**.
+5. Build method: **Dockerfile**.
+6. Dockerfile path: `food-delivery-app/backend/Dockerfile`.
+7. Build context / workdir: `food-delivery-app/backend`.
 
-### Required Render environment variables
-- `DATABASE_URL` = Supabase PostgreSQL connection string
-- `Jwt__Key` = strong JWT secret key
+### Required Koyeb environment variables
+- `DATABASE_URL` = Supabase PostgreSQL URI
+- `Jwt__Key` = strong JWT secret (32+ chars)
 - `Jwt__Issuer` = `FoodDeliveryAPI`
 - `Jwt__Audience` = `FoodDeliveryAPI.Client`
-- `CORS__ALLOWED_ORIGINS` = your Vercel domain (comma-separated if multiple)
-  - Example: `https://your-app.vercel.app`
+- `CORS__ALLOWED_ORIGINS` = your Vercel URL (comma-separated if multiple)
 
 Optional:
-- `EnableSwagger=false`
 - `ASPNETCORE_ENVIRONMENT=Production`
+- `EnableSwagger=false`
 
 ---
 
 ## 3) Supabase PostgreSQL setup
 
-### Create project
-1. Go to Supabase Dashboard.
-2. Create a new project.
-3. Open **Project Settings -> Database**.
+1. Create a Supabase project.
+2. Open **Project Settings -> Database**.
+3. Copy PostgreSQL URI, example:
 
-### Get connection string
-Use a pooled/direct Postgres URI from Supabase, for example:
+`postgresql://postgres.<ref>:<password>@aws-0-<region>.pooler.supabase.com:6543/postgres?sslmode=require`
 
-```text
-postgresql://postgres.<ref>:<password>@aws-0-<region>.pooler.supabase.com:6543/postgres?sslmode=require
-```
+4. Set it as `DATABASE_URL` in Koyeb.
 
-Use this as `DATABASE_URL` in Render.
-
-### Create tables
-This API uses EF Core and runs `EnsureCreated()` on startup, so tables are auto-created from models when first run.
-For production-grade schema evolution, switch to EF Core migrations.
+> This API uses EF Core `EnsureCreated()` on startup, so tables are created on first run.
 
 ---
 
-## 4) Connect backend to Supabase
+## 4) Connect frontend to backend
 
-Already supported in `Program.cs`:
-- Reads `DATABASE_URL`
-- Converts URL to Npgsql connection string
-- Uses PostgreSQL provider
-
-So just set `DATABASE_URL` in Render and redeploy.
-
-Health check endpoint available at:
-- `https://YOUR-RENDER-SERVICE.onrender.com/health`
-
----
-
-## 5) Point Angular to deployed Render API
-
-Preferred (no file edits needed each deploy):
-- Set `NG_APP_API_URL` in Vercel project environment variables
-- Deploy frontend
-
-Fallback manual option:
-- Edit `frontend/src/environments/environment.prod.ts`
-- Set `apiUrl: 'https://YOUR-RENDER-SERVICE.onrender.com/api'`
+1. Deploy backend on Koyeb.
+2. Verify backend:
+   - `https://YOUR-KOYEB-SERVICE.koyeb.app/health`
+   - `https://YOUR-KOYEB-SERVICE.koyeb.app/api/restaurants`
+3. In Vercel set:
+   - `NG_APP_API_URL=https://YOUR-KOYEB-SERVICE.koyeb.app/api`
+4. Deploy frontend.
+5. Update backend `CORS__ALLOWED_ORIGINS` in Koyeb to your Vercel URL.
+6. Redeploy backend.
 
 ---
 
-## 6) Deployment order
+## 5) Deployment order
 
-1. Deploy backend on Render with env vars (especially `DATABASE_URL`).
-2. Confirm backend health:
-  - `https://YOUR-RENDER-SERVICE.onrender.com/health`
-3. Confirm API:
-   - `https://YOUR-RENDER-SERVICE.onrender.com/api/restaurants`
-4. Set `NG_APP_API_URL` in Vercel.
-5. Deploy frontend on Vercel.
-6. Set `CORS__ALLOWED_ORIGINS` in Render to Vercel URL and redeploy backend.
+1. Supabase database
+2. Koyeb backend
+3. Vercel frontend
+4. Fix exact CORS origin and redeploy backend
+5. Test on laptop + mobile
 
 ---
 
-## 7) Suggested folder structure
+## 6) Quick env checklist
 
-```text
-food-delivery-app/
-  backend/
-    Program.cs
-    FoodDeliveryAPI.csproj
-    Dockerfile
-  frontend/
-    vercel.json
-    angular.json
-    src/environments/
-      environment.ts
-      environment.prod.ts
-  render.yaml
-  DEPLOYMENT-VERCEL-RENDER-SUPABASE.md
-```
-
----
-
-## 8) Production best practices
-
-1. Never commit real secrets (`DATABASE_URL`, `Jwt__Key`).
-2. Use strong JWT key (>= 32 chars random).
-3. Restrict CORS to exact frontend domains.
-4. Disable Swagger in production unless required.
-5. Add health-check endpoint and monitor uptime.
-6. Add centralized logging and error monitoring.
-7. Prefer EF migrations over `EnsureCreated()` for schema updates.
-8. Use connection pooling and SSL-required DB connections.
-9. Configure environment-specific settings only via env vars.
-10. Enable automatic backups in Supabase.
-
----
-
-## 9) Quick env var checklist
-
-### Render
+### Koyeb
 - `DATABASE_URL`
 - `Jwt__Key`
 - `Jwt__Issuer`
 - `Jwt__Audience`
 - `CORS__ALLOWED_ORIGINS`
-- `ASPNETCORE_ENVIRONMENT=Production`
-- `EnableSwagger=false`
+- `ASPNETCORE_ENVIRONMENT=Production` (optional)
+- `EnableSwagger=false` (optional)
 
 ### Vercel
-- No secret required for this frontend build unless you add runtime config.
-- Ensure `environment.prod.ts` points to Render API.
+- `NG_APP_API_URL=https://YOUR-KOYEB-SERVICE.koyeb.app/api`
