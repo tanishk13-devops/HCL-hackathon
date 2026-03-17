@@ -1,9 +1,11 @@
-# Deployment Guide: Angular (Vercel) + API (Koyeb) + Supabase PostgreSQL
+# Deployment Guide: Angular (Vercel) + API (Render) + Supabase PostgreSQL
 
 This guide deploys:
 - Frontend (Angular) -> Vercel
-- Backend (.NET API) -> Koyeb (Docker Web Service)
+- Backend (.NET API) -> Render (Web Service)
 - Database -> Supabase PostgreSQL
+
+Goal: users access the app with one URL (your Vercel URL) from mobile or laptop.
 
 ---
 
@@ -13,7 +15,7 @@ This guide deploys:
 - SPA rewrite config: `frontend/vercel.json`
 - Build-time API URL injection script: `frontend/scripts/set-prod-api-url.cjs`
 - Vercel env template: `frontend/.env.vercel.example`
-- Production build command: `npm run build:prod`
+- Production `apiUrl` default is same-origin: `/api`
 
 ### Vercel settings
 - Root Directory: `frontend`
@@ -23,33 +25,36 @@ This guide deploys:
 - Output Directory: `dist/food-delivery-app`
 
 ### Vercel environment variable
-- `NG_APP_API_URL=https://YOUR-KOYEB-SERVICE.koyeb.app/api`
+- `NG_APP_API_URL=/api`
+
+### Required Vercel rewrite for single URL
+In Vercel Project -> Settings -> Rewrites, add:
+- Source: `/api/:path*`
+- Destination: `https://YOUR-RENDER-SERVICE.onrender.com/api/:path*`
+
+This makes browser calls stay on your Vercel domain while Vercel proxies API to Render.
 
 ---
 
-## 2) Backend deployment (Koyeb)
+## 2) Backend deployment (Render)
 
 ### What is already prepared
-- Docker-ready backend: `backend/Dockerfile`
-- API listens on provider `PORT` env var: `backend/Program.cs`
-- .NET 8 target: `backend/FoodDeliveryAPI.csproj`
-- Koyeb env template: `backend/.env.koyeb.example`
+- Render blueprint: `render.yaml` (API service only)
+- API binds to provider `PORT` in `backend/Program.cs`
+- Docker setup in `backend/Dockerfile`
+- Render env template in `backend/.env.render.example`
 
-### Koyeb service setup
-1. Open Koyeb Dashboard -> Create App.
-2. Choose GitHub repository.
-3. Select this repo and branch (`main`).
-4. Service type: **Web Service**.
-5. Build method: **Dockerfile**.
-6. Dockerfile path: `food-delivery-app/backend/Dockerfile`.
-7. Build context / workdir: `food-delivery-app/backend`.
+### Render setup
+1. Render -> New -> Blueprint.
+2. Connect your GitHub repo.
+3. Deploy from root `render.yaml`.
 
-### Required Koyeb environment variables
-- `DATABASE_URL` = Supabase PostgreSQL URI
-- `Jwt__Key` = strong JWT secret (32+ chars)
+### Required Render env vars
+- `DATABASE_URL` = Supabase Postgres URI
+- `Jwt__Key` = strong JWT key (32+ chars)
 - `Jwt__Issuer` = `FoodDeliveryAPI`
 - `Jwt__Audience` = `FoodDeliveryAPI.Client`
-- `CORS__ALLOWED_ORIGINS` = your Vercel URL (comma-separated if multiple)
+- `CORS__ALLOWED_ORIGINS` = your Vercel app URL
 
 Optional:
 - `ASPNETCORE_ENVIRONMENT=Production`
@@ -59,52 +64,45 @@ Optional:
 
 ## 3) Supabase PostgreSQL setup
 
-1. Create a Supabase project.
+1. Create project in Supabase.
 2. Open **Project Settings -> Database**.
-3. Copy PostgreSQL URI, example:
+3. Copy URI, e.g.:
 
 `postgresql://postgres.<ref>:<password>@aws-0-<region>.pooler.supabase.com:6543/postgres?sslmode=require`
 
-4. Set it as `DATABASE_URL` in Koyeb.
-
-> This API uses EF Core `EnsureCreated()` on startup, so tables are created on first run.
+4. Set it in Render as `DATABASE_URL`.
 
 ---
 
-## 4) Connect frontend to backend
+## 4) Verification
 
-1. Deploy backend on Koyeb.
-2. Verify backend:
-   - `https://YOUR-KOYEB-SERVICE.koyeb.app/health`
-   - `https://YOUR-KOYEB-SERVICE.koyeb.app/api/restaurants`
-3. In Vercel set:
-   - `NG_APP_API_URL=https://YOUR-KOYEB-SERVICE.koyeb.app/api`
-4. Deploy frontend.
-5. Update backend `CORS__ALLOWED_ORIGINS` in Koyeb to your Vercel URL.
-6. Redeploy backend.
+1. Backend checks:
+   - `https://YOUR-RENDER-SERVICE.onrender.com/health`
+   - `https://YOUR-RENDER-SERVICE.onrender.com/api/restaurants`
+2. Frontend check:
+   - `https://YOUR-APP.vercel.app`
+3. Open same Vercel URL on laptop and mobile.
 
 ---
 
-## 5) Deployment order
+## 5) Final production order
 
-1. Supabase database
-2. Koyeb backend
-3. Vercel frontend
-4. Fix exact CORS origin and redeploy backend
-5. Test on laptop + mobile
+1. Deploy backend on Render (with Supabase env vars)
+2. Deploy frontend on Vercel
+3. Add Vercel rewrite `/api/:path*` -> Render API
+4. Set backend `CORS__ALLOWED_ORIGINS` = Vercel domain
+5. Redeploy backend and test
 
 ---
 
 ## 6) Quick env checklist
 
-### Koyeb
+### Render
 - `DATABASE_URL`
 - `Jwt__Key`
 - `Jwt__Issuer`
 - `Jwt__Audience`
 - `CORS__ALLOWED_ORIGINS`
-- `ASPNETCORE_ENVIRONMENT=Production` (optional)
-- `EnableSwagger=false` (optional)
 
 ### Vercel
-- `NG_APP_API_URL=https://YOUR-KOYEB-SERVICE.koyeb.app/api`
+- `NG_APP_API_URL=/api`

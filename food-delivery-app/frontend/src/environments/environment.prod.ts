@@ -1,6 +1,6 @@
 export const environment = {
   production: true,
-  // Replace with your Render backend URL after deployment.
-  // Example: https://ziggy-api.onrender.com/api
-  apiUrl: 'https://YOUR-RENDER-SERVICE.onrender.com/api'
+  // Use same-origin API path so frontend can stay on a single public URL.
+  // Configure a Vercel rewrite from /api/* -> Render backend /api/*.
+  apiUrl: '/api'
 };
