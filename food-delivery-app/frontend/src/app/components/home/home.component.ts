@@ -29,6 +29,7 @@ export class HomeComponent implements OnInit, OnDestroy {
   deliveredOrdersCount = 0;
   activeSlide = 0;
   apiError = '';
+  readonly foodPlaceholder = 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=1200&q=80';
 
   features = [
     'Fresh, chef-crafted meals every day',
@@ -62,6 +63,37 @@ export class HomeComponent implements OnInit, OnDestroy {
 
   goToSlide(index: number): void {
     this.activeSlide = index;
+  }
+
+  getFoodImageUrl(food: Food): string {
+    if (!food?.name?.trim()) {
+      return this.foodPlaceholder;
+    }
+
+    const dishSlug = food.name
+      .toLowerCase()
+      .trim()
+      .replace(/[^a-z0-9\s-]/g, '')
+      .replace(/\s+/g, '-');
+
+    const signature = this.getFoodSignature(food);
+    return `https://source.unsplash.com/400x300/?${encodeURIComponent(dishSlug)}&sig=${signature}`;
+  }
+
+  onFoodImageError(event: Event): void {
+    (event.target as HTMLImageElement).src = this.foodPlaceholder;
+  }
+
+  private getFoodSignature(food: Food): number {
+    const seed = `${food.id}-${food.restaurantId}-${food.name}`;
+    let hash = 0;
+
+    for (let i = 0; i < seed.length; i++) {
+      hash = ((hash << 5) - hash) + seed.charCodeAt(i);
+      hash |= 0;
+    }
+
+    return Math.abs(hash % 100000);
   }
 
   private loadFeaturedRestaurants(): void {

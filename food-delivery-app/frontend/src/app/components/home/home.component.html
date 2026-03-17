@@ -73,7 +73,7 @@
     <div class="carousel-frame" *ngIf="!loadingTrending && trendingFoods.length">
       <div class="carousel-track" [style.transform]="'translateX(-' + (activeSlide * 100) + '%)'">
         <article class="slide" *ngFor="let food of trendingFoods">
-          <img [src]="food.imageUrl" [alt]="food.name" />
+          <img [src]="getFoodImageUrl(food)" [alt]="food.name" (error)="onFoodImageError($event)" />
           <div class="slide-body">
             <h3>{{ food.name }}</h3>
             <p>{{ food.description }}</p>

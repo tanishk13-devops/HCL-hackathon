@@ -1,5 +1,6 @@
 # Deployment Guide: Angular (Vercel) + API (Render) + Supabase PostgreSQL
 
+
 This guide deploys:
 - Frontend (Angular) -> Vercel
 - Backend (.NET API) -> Render (Web Service)

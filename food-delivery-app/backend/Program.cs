@@ -228,7 +228,7 @@ try
                 ? food.Name.Split(" - ", StringSplitOptions.RemoveEmptyEntries)[0]
                 : food.Name;
 
-            var expected = await foodImageService.GetFoodImageUrlAsync(baseDishName);
+            var expected = await ResolveDishImageUrlAsync(baseDishName, foodImageService);
             if (food.ImageUrl != expected)
             {
                 food.ImageUrl = expected;
@@ -409,7 +409,7 @@ static async Task SeedFoodsAsync(FoodDeliveryDbContext context, int targetFoodCo
                 }
 
                 var price = basePrice + ((restaurant.Id + slot + cycle) % 12) * 10;
-                var dishImageUrl = await foodImageService.GetFoodImageUrlAsync(baseName);
+                var dishImageUrl = await ResolveDishImageUrlAsync(baseName, foodImageService);
                 newFoods.Add(new Food
                 {
                     Name = name,
@@ -435,4 +435,38 @@ static async Task SeedFoodsAsync(FoodDeliveryDbContext context, int targetFoodCo
         context.Foods.AddRange(newFoods);
         context.SaveChanges();
     }
+}
+
+static async Task<string> ResolveDishImageUrlAsync(string baseDishName, IFoodImageService foodImageService)
+{
+    if (TryGetUploadedDishImageUrl(baseDishName, out var uploadedUrl))
+    {
+        return uploadedUrl;
+    }
+
+    return await foodImageService.GetFoodImageUrlAsync(baseDishName);
+}
+
+static bool TryGetUploadedDishImageUrl(string dishName, out string imageUrl)
+{
+    var uploadedDishUrls = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+    {
+        ["Chole Bhature Combo"] = "https://images.unsplash.com/photo-1626500155537-93690c24099e",
+        ["Honey Chilli Potato"] = "https://images.unsplash.com/photo-1604908554027-0c0cfa5a9b43",
+        ["Rajma Chawal Bowl"] = "https://images.unsplash.com/photo-1617093727343-374698b1b08d",
+        ["Shahi Tukda"] = "https://www.indianhealthyrecipes.com/wp-content/uploads/2022/02/shahi-tukda-recipe.jpg",
+        ["Stuffed Mushrooms"] = "https://blackberrybabe.com/wp-content/uploads/2023/11/Stuffed-Portobello-Mushrooms.jpg",
+        ["Hara Bhara Kebab"] = "https://www.indianhealthyrecipes.com/wp-content/uploads/2021/05/hara-bhara-kabab.jpg",
+        ["Prawn Curry"] = "https://www.whiskaffair.com/wp-content/uploads/2023/02/Shrimp-Masala-2-3.jpg",
+        ["Rasmalai"] = "https://aromaticessence.co/wp-content/uploads/2018/05/49E95995-028D-44D2-9252-2CDA545120D8.jpeg",
+        ["Chilli Paneer"] = "https://howtomakerecipes.com/wp-content/uploads/2023/01/chilli-paneer-starter-recipe1.jpg",
+        ["Dal Makhani"] = "https://www.indianhealthyrecipes.com/wp-content/uploads/2022/02/dal-makhani-recipe.jpg",
+        ["Mutton Rogan Josh"] = "https://theyellowdaal.com/wp-content/uploads/2021/01/1611762173130.jpg",
+        ["Brownie Sundae"] = "https://www.bakerykart.com/upload/recipe/large/brownie-sundae-recipe.jpg",
+        ["Crispy Corn"] = "https://www.indianhealthyrecipes.com/wp-content/uploads/2023/09/crispy-corn.webp",
+        ["Gulab Jamun"] = "https://pipingpotcurry.com/wp-content/uploads/2023/12/Gulab-Jamun-Recipe-Piping-Pot-Curry.jpg",
+        ["Veg Spring Roll"] = "https://www.vegrecipesofindia.com/wp-content/uploads/2015/10/veg-spring-rolls-recipe.jpg"
+    };
+
+    return uploadedDishUrls.TryGetValue(dishName.Trim(), out imageUrl!);
 }

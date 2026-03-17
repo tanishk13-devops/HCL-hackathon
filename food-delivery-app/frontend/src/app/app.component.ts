@@ -6,11 +6,12 @@ import { CartService } from './services/cart.service';
 import { Subscription } from 'rxjs';
 import { filter } from 'rxjs/operators';
 import { animate, style, transition, trigger } from '@angular/animations';
+import { PremiumFooterComponent } from './components/premium-footer/premium-footer.component';
 
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [CommonModule, RouterModule, RouterOutlet],
+  imports: [CommonModule, RouterModule, RouterOutlet, PremiumFooterComponent],
   templateUrl: './app.component.html',
   styleUrls: ['./app.component.css'],
   animations: [

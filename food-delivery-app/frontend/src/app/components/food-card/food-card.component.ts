@@ -18,7 +18,30 @@ export class FoodCardComponent {
   readonly placeholder = 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=1200&q=80';
 
   get imageUrl(): string {
-    return this.food.imageUrl || this.placeholder;
+    if (!this.food?.name?.trim()) {
+      return this.placeholder;
+    }
+
+    const dishSlug = this.food.name
+      .toLowerCase()
+      .trim()
+      .replace(/[^a-z0-9\s-]/g, '')
+      .replace(/\s+/g, '-');
+
+    const signature = this.getSignature();
+    return `https://source.unsplash.com/400x300/?${encodeURIComponent(dishSlug)}&sig=${signature}`;
+  }
+
+  private getSignature(): number {
+    const seed = `${this.food.id}-${this.food.restaurantId}-${this.food.name}`;
+    let hash = 0;
+
+    for (let i = 0; i < seed.length; i++) {
+      hash = ((hash << 5) - hash) + seed.charCodeAt(i);
+      hash |= 0;
+    }
+
+    return Math.abs(hash % 100000);
   }
 
   onImageError(event: Event): void {

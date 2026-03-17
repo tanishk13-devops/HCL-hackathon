@@ -43,6 +43,29 @@
 
   <div class="food-grid" *ngIf="!loading">
     <div *ngIf="filteredFoods.length === 0" class="no-items">No items available</div>
-    <app-food-card *ngFor="let food of filteredFoods" [food]="food" (add)="addToCart($event)"></app-food-card>
+
+    <article class="menu-food-card" *ngFor="let item of filteredFoods; let i = index; trackBy: trackByFood">
+      <img
+        class="menu-food-image"
+        [src]="item.image"
+        [alt]="item.name"
+        loading="lazy"
+        decoding="async"
+        (error)="onImageError(item, i)"
+      />
+
+      <div class="menu-food-body">
+        <h3>{{ item.name }}</h3>
+        <p class="menu-food-category">{{ item.category?.name || item.categoryName || 'Category' }}</p>
+        <p class="menu-food-description">{{ item.description }}</p>
+
+        <div class="menu-food-footer">
+          <span class="menu-food-price">₹{{ item.price }}</span>
+          <button class="btn-add btn-ripple" type="button" [disabled]="item.isAvailable === false" (click)="addToCart(item)">
+            {{ item.isAvailable === false ? 'Out of Stock' : 'Add to Cart' }}
+          </button>
+        </div>
+      </div>
+    </article>
   </div>
 </div>
