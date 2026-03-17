@@ -1,0 +1,39 @@
+services:
+  - type: web
+    name: ziggy-api
+    env: docker
+    rootDir: food-delivery-app/backend
+    plan: free
+    autoDeploy: true
+    healthCheckPath: /health
+    envVars:
+      - key: ASPNETCORE_ENVIRONMENT
+        value: Production
+      - key: EnableSwagger
+        value: "false"
+      - key: DATABASE_URL
+        sync: false
+      - key: Jwt__Key
+        sync: false
+      - key: Jwt__Issuer
+        value: FoodDeliveryAPI
+      - key: Jwt__Audience
+        value: FoodDeliveryAPI.Client
+      - key: CORS__ALLOWED_ORIGINS
+        sync: false
+
+  - type: web
+    name: ziggy-frontend
+    runtime: static
+    rootDir: food-delivery-app/frontend
+    plan: free
+    autoDeploy: true
+    buildCommand: npm ci && npm run build:prod
+    staticPublishPath: dist/food-delivery-app
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
+    envVars:
+      - key: NG_APP_API_URL
+        sync: false
