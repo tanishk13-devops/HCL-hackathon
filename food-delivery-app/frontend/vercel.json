@@ -4,6 +4,7 @@
   "buildCommand": "npm run build:prod",
   "outputDirectory": "dist/food-delivery-app",
   "rewrites": [
+    { "source": "/api/(.*)", "destination": "https://ziggy-api.onrender.com/api/$1" },
     { "source": "/(.*)", "destination": "/index.html" }
   ]
 }
