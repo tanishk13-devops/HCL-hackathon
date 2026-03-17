@@ -2,21 +2,21 @@
   <h1>Admin Dashboard</h1>
 
   <div class="tabs">
-    <button [class.active]="activeTab === 'dashboard'" (click)="activeTab = 'dashboard'">Dashboard</button>
-    <button [class.active]="activeTab === 'restaurants'" (click)="activeTab = 'restaurants'">Restaurants</button>
-    <button [class.active]="activeTab === 'foods'" (click)="activeTab = 'foods'">Foods Management</button>
-    <button [class.active]="activeTab === 'orders'" (click)="activeTab = 'orders'">Orders Management</button>
-    <button [class.active]="activeTab === 'customers'" (click)="activeTab = 'customers'">Customer Activity</button>
+    <button class="btn-ripple" [class.active]="activeTab === 'dashboard'" (click)="activeTab = 'dashboard'">Dashboard</button>
+    <button class="btn-ripple" [class.active]="activeTab === 'restaurants'" (click)="activeTab = 'restaurants'">Restaurants</button>
+    <button class="btn-ripple" [class.active]="activeTab === 'foods'" (click)="activeTab = 'foods'">Foods Management</button>
+    <button class="btn-ripple" [class.active]="activeTab === 'orders'" (click)="activeTab = 'orders'">Orders Management</button>
+    <button class="btn-ripple" [class.active]="activeTab === 'customers'" (click)="activeTab = 'customers'">Customer Activity</button>
   </div>
 
   <div *ngIf="activeTab === 'dashboard'" class="tab-content">
     <h2>Platform Metrics</h2>
     <div *ngIf="dashboard" class="metrics">
-      <p><strong>Restaurants:</strong> {{ dashboard.totalRestaurants }}</p>
-      <p><strong>Orders:</strong> {{ dashboard.totalOrders }}</p>
-      <p><strong>Customers:</strong> {{ dashboard.totalCustomers }}</p>
-      <p><strong>Delivered Revenue:</strong> ₹{{ dashboard.deliveredRevenue }}</p>
-      <p><strong>Active Orders:</strong> {{ dashboard.activeOrders }}</p>
+      <div class="metric-card"><span>Restaurants</span><strong>{{ dashboard.totalRestaurants }}</strong></div>
+      <div class="metric-card"><span>Orders</span><strong>{{ dashboard.totalOrders }}</strong></div>
+      <div class="metric-card"><span>Customers</span><strong>{{ dashboard.totalCustomers }}</strong></div>
+      <div class="metric-card"><span>Delivered Revenue</span><strong>₹{{ dashboard.deliveredRevenue }}</strong></div>
+      <div class="metric-card"><span>Active Orders</span><strong>{{ dashboard.activeOrders }}</strong></div>
     </div>
   </div>
 
@@ -28,7 +28,7 @@
       <input type="text" [(ngModel)]="newRestaurant.imageUrl" placeholder="Image URL">
       <textarea [(ngModel)]="newRestaurant.description" placeholder="Description"></textarea>
       <input type="number" step="0.1" [(ngModel)]="newRestaurant.rating" placeholder="Rating">
-      <button (click)="addRestaurant()" class="btn-primary">Add Restaurant</button>
+      <button (click)="addRestaurant()" class="btn-primary btn-ripple">Add Restaurant</button>
     </div>
 
     <div class="list-section">
@@ -40,7 +40,7 @@
             <td>{{ r.name }}</td>
             <td>{{ r.location }}</td>
             <td>{{ r.rating }}</td>
-            <td><button (click)="deleteRestaurant(r.id)" class="btn-danger">Delete</button></td>
+            <td><button (click)="deleteRestaurant(r.id)" class="btn-danger btn-ripple">Delete</button></td>
           </tr>
         </tbody>
       </table>
@@ -77,7 +77,7 @@
           Available
         </label>
       </div>
-      <button (click)="addFood()" [disabled]="loading" class="btn-primary">
+      <button (click)="addFood()" [disabled]="loading" class="btn-primary btn-ripple">
         {{ loading ? 'Adding...' : 'Add Food' }}
       </button>
     </div>
@@ -107,7 +107,7 @@
               </span>
             </td>
             <td>
-              <button (click)="deleteFood(food.id)" class="btn-danger">Delete</button>
+              <button (click)="deleteFood(food.id)" class="btn-danger btn-ripple">Delete</button>
             </td>
           </tr>
         </tbody>

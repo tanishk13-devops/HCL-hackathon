@@ -1,16 +1,17 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { ActivatedRoute, RouterModule } from '@angular/router';
+import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { FoodService } from '../../services/food.service';
 import { CartService } from '../../services/cart.service';
 import { Food } from '../../models/food.model';
 import { CartItem } from '../../models/cart.model';
+import { FoodCardComponent } from '../food-card/food-card.component';
 
 @Component({
   selector: 'app-menu',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterModule],
+  imports: [CommonModule, FormsModule, RouterModule, FoodCardComponent],
   templateUrl: './menu.component.html',
   styleUrls: ['./menu.component.css']
 })
@@ -19,13 +20,18 @@ export class MenuComponent implements OnInit {
   foods: Food[] = [];
   categories: string[] = [];
   selectedCategory = '';
+  searchTerm = '';
+  sortBy: 'recommended' | 'priceLowToHigh' | 'priceHighToLow' | 'nameAsc' = 'recommended';
   filteredFoods: Food[] = [];
   loading = true;
+  readonly skeletonItems = Array.from({ length: 8 });
+  addSuccessMessage = '';
 
   constructor(
     private foodService: FoodService,
     private cartService: CartService,
-    private route: ActivatedRoute
+    private route: ActivatedRoute,
+    private router: Router
   ) {}
 
   ngOnInit(): void {
@@ -40,7 +46,7 @@ export class MenuComponent implements OnInit {
       next: (foods) => {
         this.foods = foods;
         this.extractCategories();
-        this.filteredFoods = foods;
+        this.applyFilters();
         this.loading = false;
       },
       error: () => {
@@ -54,39 +60,57 @@ export class MenuComponent implements OnInit {
   }
 
   filterByCategory(): void {
-    if (this.selectedCategory) {
-      this.filteredFoods = this.foods.filter(f => (f.category?.name || f.categoryName) === this.selectedCategory);
-    } else {
-      this.filteredFoods = this.foods;
-    }
+    this.applyFilters();
   }
 
   onCategoryChange(): void {
     this.filterByCategory();
   }
 
-  getFoodImage(food: Food): string {
-    const imageMap: Record<string, string> = {
-      biryani: 'https://images.pexels.com/photos/12737656/pexels-photo-12737656.jpeg?auto=compress&cs=tinysrgb&w=1200',
-      'butter chicken': 'https://images.pexels.com/photos/7625056/pexels-photo-7625056.jpeg?auto=compress&cs=tinysrgb&w=1200',
-      'paneer tikka': 'https://images.pexels.com/photos/5410400/pexels-photo-5410400.jpeg?auto=compress&cs=tinysrgb&w=1200',
-      'tandoori chicken': 'https://images.pexels.com/photos/616354/pexels-photo-616354.jpeg?auto=compress&cs=tinysrgb&w=1200',
-      'garlic naan': 'https://images.pexels.com/photos/9797029/pexels-photo-9797029.jpeg?auto=compress&cs=tinysrgb&w=1200',
-      samosa: 'https://www.cubesnjuliennes.com/wp-content/uploads/2020/08/Best-Indian-Punjabi-Samosa-Recipe.jpg',
-      'dal makhani': 'https://sinfullyspicy.com/wp-content/uploads/2015/03/3-1.jpg',
-      'chole bhature': 'https://madhurasrecipe.com/wp-content/uploads/2025/09/MR-Chole-Bhature-featured.jpg',
-      'shahi tukda': 'https://palatesdesire.com/wp-content/uploads/2021/05/shahi-tukda-recipe@palates-desire-1.jpg',
-      'gulab jamun': 'https://images.pexels.com/photos/3026808/pexels-photo-3026808.jpeg?auto=compress&cs=tinysrgb&w=1200'
-    };
+  onSearchChange(): void {
+    this.applyFilters();
+  }
 
-    const key = (food.name || '')
-      .trim()
-      .toLowerCase()
-      .replace(/-/g, ' ')
-      .replace(/\s+/g, ' ');
+  onSortChange(): void {
+    this.applyFilters();
+  }
 
-    // Prefer image URL coming from API/DB so admin or DB updates are reflected immediately.
-    return food.imageUrl || imageMap[key] || 'https://via.placeholder.com/800x600?text=Ziggy+Food';
+  clearFilters(): void {
+    this.selectedCategory = '';
+    this.searchTerm = '';
+    this.sortBy = 'recommended';
+    this.applyFilters();
+  }
+
+  private applyFilters(): void {
+    let list = [...this.foods];
+
+    if (this.selectedCategory) {
+      list = list.filter(f => (f.category?.name || f.categoryName) === this.selectedCategory);
+    }
+
+    const search = this.searchTerm.trim().toLowerCase();
+    if (search) {
+      list = list.filter(f =>
+        f.name.toLowerCase().includes(search) ||
+        (f.description || '').toLowerCase().includes(search));
+    }
+
+    switch (this.sortBy) {
+      case 'priceLowToHigh':
+        list.sort((a, b) => a.price - b.price);
+        break;
+      case 'priceHighToLow':
+        list.sort((a, b) => b.price - a.price);
+        break;
+      case 'nameAsc':
+        list.sort((a, b) => a.name.localeCompare(b.name));
+        break;
+      default:
+        break;
+    }
+
+    this.filteredFoods = list;
   }
 
   addToCart(food: Food): void {
@@ -97,7 +121,16 @@ export class MenuComponent implements OnInit {
         quantity: 1
       };
       this.cartService.addToCart(cartItem).subscribe({
-        next: () => alert(`${food.name} added to cart!`)
+        next: () => {
+          this.addSuccessMessage = `${food.name} added to cart`;
+          setTimeout(() => (this.addSuccessMessage = ''), 1200);
+        },
+        error: (err) => {
+          if (err?.status === 401) {
+            this.router.navigate(['/login']);
+            return;
+          }
+        }
       });
     }
   }

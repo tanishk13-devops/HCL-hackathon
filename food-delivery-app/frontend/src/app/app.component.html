@@ -4,7 +4,10 @@
 	<nav class="nav-links">
 		<a routerLink="/home" routerLinkActive="active">Home</a>
 		<a routerLink="/restaurants" routerLinkActive="active">Restaurants</a>
-		<a routerLink="/cart" routerLinkActive="active">Cart</a>
+		<a routerLink="/cart" routerLinkActive="active" class="cart-link" [class.bump]="cartBump">
+			<span>Cart</span>
+			<span class="cart-badge" *ngIf="cartCount > 0">{{ cartCount }}</span>
+		</a>
 		<a routerLink="/checkout" routerLinkActive="active">Checkout</a>
 		<a routerLink="/orders" routerLinkActive="active">Orders</a>
 		<a routerLink="/order-tracking" routerLinkActive="active">Tracking</a>
@@ -24,5 +27,7 @@
 </header>
 
 <main class="page-wrap">
-	<router-outlet></router-outlet>
+	<div class="route-shell" [@routeTransition]="routeState">
+		<router-outlet #outlet="outlet"></router-outlet>
+	</div>
 </main>

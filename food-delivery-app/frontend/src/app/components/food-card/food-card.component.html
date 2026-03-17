@@ -1,0 +1,38 @@
+<article class="food-card">
+  <div class="image-wrap">
+    <img
+      class="food-image"
+      [src]="imageUrl"
+      [alt]="food.name"
+      loading="lazy"
+      decoding="async"
+      (error)="onImageError($event)"
+    />
+
+    <button type="button" class="fav-btn" [class.active]="isFavorite" (click)="toggleFavorite()" aria-label="Toggle favorite">
+      ♥
+    </button>
+
+    <button
+      type="button"
+      class="hover-add btn-ripple"
+      [class.adding]="isAdding"
+      [disabled]="food.isAvailable === false"
+      (click)="onAdd()">
+      {{ food.isAvailable === false ? 'Out of Stock' : 'Add to Cart' }}
+    </button>
+  </div>
+
+  <div class="food-details">
+    <h3>{{ food.name }}</h3>
+    <p class="category">{{ food.category?.name || food.categoryName || 'Category' }}</p>
+    <p class="description">{{ food.description }}</p>
+
+    <div class="footer">
+      <span class="price">₹{{ food.price }}</span>
+      <button (click)="onAdd()" [disabled]="food.isAvailable === false" class="btn-add btn-ripple">
+        {{ food.isAvailable === false ? 'Out of Stock' : 'Add to Cart' }}
+      </button>
+    </div>
+  </div>
+</article>

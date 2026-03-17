@@ -1,13 +1,36 @@
 <div class="restaurant-list-page">
-  <div class="header-row">
-    <h1>Restaurants</h1>
+  <div class="header-card glass-panel">
+    <h1>Discover restaurants near you</h1>
+    <p>Find the best places by location and rating.</p>
+
     <div class="search-box">
-      <input [(ngModel)]="search" placeholder="Search by name or location" />
+      <input [(ngModel)]="search" placeholder="Search by name or location" (keyup.enter)="load()" />
       <button (click)="load()">Search</button>
     </div>
+
+    <div class="filters-row">
+      <select [(ngModel)]="selectedLocation" (change)="applyFilters()">
+        <option value="">All locations</option>
+        <option *ngFor="let location of locations" [value]="location">{{ location }}</option>
+      </select>
+
+      <select [(ngModel)]="sortBy" (change)="applyFilters()">
+        <option value="recommended">Sort: Recommended</option>
+        <option value="ratingDesc">Rating: High to Low</option>
+        <option value="ratingAsc">Rating: Low to High</option>
+        <option value="nameAsc">Name: A-Z</option>
+      </select>
+
+      <button class="clear-btn" (click)="clearFilters()">Reset</button>
+    </div>
+
+    <div class="results-count">Showing {{ restaurants.length }} restaurant(s)</div>
   </div>
 
-  <p *ngIf="loading">Loading restaurants...</p>
+  <div class="loading-wrap" *ngIf="loading">
+    <div class="loader-spinner"></div>
+    <p>Loading restaurants...</p>
+  </div>
 
   <div class="grid" *ngIf="!loading">
     <a class="card" *ngFor="let restaurant of restaurants" [routerLink]="['/restaurant-menu', restaurant.id]">
@@ -17,7 +40,7 @@
         <p>{{ restaurant.description }}</p>
         <div class="meta">
           <span>📍 {{ restaurant.location }}</span>
-          <span>⭐ {{ restaurant.rating }}</span>
+          <span class="rating">⭐ {{ restaurant.rating }}</span>
         </div>
       </div>
     </a>

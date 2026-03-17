@@ -8,10 +8,12 @@ namespace FoodDeliveryAPI.Services.Implementations
     public class FoodService : IFoodService
     {
         private readonly IFoodRepository _foodRepository;
+        private readonly IFoodImageService _foodImageService;
 
-        public FoodService(IFoodRepository foodRepository)
+        public FoodService(IFoodRepository foodRepository, IFoodImageService foodImageService)
         {
             _foodRepository = foodRepository;
+            _foodImageService = foodImageService;
         }
 
         public async Task<List<Food>> GetRestaurantMenuAsync(int restaurantId, int? categoryId)
@@ -22,6 +24,10 @@ namespace FoodDeliveryAPI.Services.Implementations
 
         public async Task<Food> CreateAsync(FoodItemRequest request)
         {
+            var imageUrl = string.IsNullOrWhiteSpace(request.ImageUrl)
+                ? await _foodImageService.GetFoodImageUrlAsync(request.Name)
+                : request.ImageUrl;
+
             var food = new Food
             {
                 Name = request.Name,
@@ -29,7 +35,7 @@ namespace FoodDeliveryAPI.Services.Implementations
                 Price = request.Price,
                 CategoryId = request.CategoryId,
                 RestaurantId = request.RestaurantId,
-                ImageUrl = request.ImageUrl,
+                ImageUrl = imageUrl,
                 IsAvailable = request.IsAvailable,
                 CreatedAt = DateTime.UtcNow
             };
@@ -47,7 +53,9 @@ namespace FoodDeliveryAPI.Services.Implementations
             food.Price = request.Price;
             food.CategoryId = request.CategoryId;
             food.RestaurantId = request.RestaurantId;
-            food.ImageUrl = request.ImageUrl;
+            food.ImageUrl = string.IsNullOrWhiteSpace(request.ImageUrl)
+                ? await _foodImageService.GetFoodImageUrlAsync(request.Name)
+                : request.ImageUrl;
             food.IsAvailable = request.IsAvailable;
 
             return await _foodRepository.UpdateAsync(food);

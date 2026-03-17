@@ -1,8 +1,9 @@
 <div class="checkout-page">
   <h1>Checkout</h1>
+  <p *ngIf="error" class="error-text">{{ error }}</p>
 
   <div class="layout">
-    <section>
+    <section class="panel">
       <h3>Delivery Address</h3>
       <div *ngFor="let a of addresses" class="address-card">
         <label>
@@ -16,7 +17,7 @@
       <input placeholder="City" [(ngModel)]="newAddress.city" />
       <input placeholder="State" [(ngModel)]="newAddress.state" />
       <input placeholder="Pincode" [(ngModel)]="newAddress.pincode" />
-      <button (click)="addAddress()">Add</button>
+      <button class="btn-primary btn-ripple" (click)="addAddress()">Add Address</button>
 
       <h3>Payment Method</h3>
       <select [(ngModel)]="paymentMethod">
@@ -26,7 +27,7 @@
       </select>
     </section>
 
-    <section>
+    <section class="panel">
       <h3>Order Summary</h3>
       <div *ngFor="let item of cart.cartItems" class="line">
         <span>{{ item.foodItem?.name || ('Item #' + item.foodItemId) }} x {{ item.quantity }}</span>
@@ -34,7 +35,8 @@
       </div>
       <hr/>
       <h3>Total: ₹{{ total }}</h3>
-      <button [disabled]="loading || !cart.cartItems.length" (click)="placeOrder()">
+      <p *ngIf="!selectedAddressId" class="warn-text">Select an address to enable Place Order.</p>
+      <button class="btn-primary btn-ripple" [disabled]="loading || !cart.cartItems.length || !selectedAddressId" (click)="placeOrder()">
         {{ loading ? 'Placing...' : 'Place Order' }}
       </button>
     </section>

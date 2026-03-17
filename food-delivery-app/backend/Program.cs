@@ -71,6 +71,7 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     });
 
 builder.Services.AddAuthorization();
+builder.Services.AddHttpClient();
 
 // Repository registrations
 builder.Services.AddScoped<IUserRepository, UserRepository>();
@@ -87,6 +88,7 @@ builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<ITokenService, TokenService>();
 builder.Services.AddScoped<IRestaurantService, RestaurantService>();
 builder.Services.AddScoped<IFoodService, FoodService>();
+builder.Services.AddScoped<IFoodImageService, FoodImageService>();
 builder.Services.AddScoped<ICartService, CartService>();
 builder.Services.AddScoped<IOrderService, OrderService>();
 builder.Services.AddScoped<IAddressService, AddressService>();
@@ -120,6 +122,12 @@ builder.Services.AddCors(options =>
 
 var app = builder.Build();
 
+var renderPort = Environment.GetEnvironmentVariable("PORT");
+if (!string.IsNullOrWhiteSpace(renderPort))
+{
+    app.Urls.Add($"http://0.0.0.0:{renderPort}");
+}
+
 try
 {
     // Configure middleware
@@ -142,6 +150,7 @@ try
     app.UseCors("AllowAll");
     app.UseAuthentication();
     app.UseAuthorization();
+    app.MapGet("/health", () => Results.Ok(new { status = "ok", service = "ziggy-api" }));
     app.MapControllers();
 
     // Create database and seed data
@@ -192,81 +201,46 @@ try
 
         if (!context.Restaurants.Any())
         {
-            context.Restaurants.AddRange(
-                new Restaurant
-                {
-                    Name = "Spice Route",
-                    Description = "North Indian favorites, biryanis, and tandoor specials.",
-                    Location = "Noida Sector 18",
-                    Rating = 4.4m,
-                    ImageUrl = "https://images.unsplash.com/photo-1552566626-52f8b828add9?q=80&w=1200"
-                },
-                new Restaurant
-                {
-                    Name = "Coastal Bowl",
-                    Description = "South Indian and coastal comfort food.",
-                    Location = "Gurgaon CyberHub",
-                    Rating = 4.3m,
-                    ImageUrl = "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?q=80&w=1200"
-                }
-            );
-            context.SaveChanges();
+            SeedRestaurants(context);
         }
 
-        if (!context.Foods.Any())
+        if (context.Restaurants.Count() < 25)
         {
-            var mainCourseCategoryId = context.FoodCategories.First(c => c.Name == "Main Course").Id;
-            var dessertsCategoryId = context.FoodCategories.First(c => c.Name == "Desserts").Id;
-            var startersCategoryId = context.FoodCategories.First(c => c.Name == "Starters").Id;
+            SeedRestaurants(context);
+        }
 
-            var spiceRouteId = context.Restaurants.First(r => r.Name == "Spice Route").Id;
-            var coastalBowlId = context.Restaurants.First(r => r.Name == "Coastal Bowl").Id;
+        if (context.Foods.Count() < 250)
+        {
+            SeedFoods(context, 250);
+        }
 
-            context.Foods.AddRange(
-                new Food
-                {
-                    Name = "Butter Chicken",
-                    Description = "Classic creamy tomato gravy with tender chicken.",
-                    Price = 349,
-                    CategoryId = mainCourseCategoryId,
-                    RestaurantId = spiceRouteId,
-                    ImageUrl = "https://images.pexels.com/photos/7625056/pexels-photo-7625056.jpeg?auto=compress&cs=tinysrgb&w=1200",
-                    IsAvailable = true
-                },
-                new Food
-                {
-                    Name = "Paneer Tikka",
-                    Description = "Tandoor roasted paneer cubes and peppers.",
-                    Price = 229,
-                    CategoryId = startersCategoryId,
-                    RestaurantId = spiceRouteId,
-                    ImageUrl = "https://images.unsplash.com/photo-1599487488170-d11ec9c172f0?q=80&w=1200",
-                    IsAvailable = true
-                },
-                new Food
-                {
-                    Name = "Prawn Curry",
-                    Description = "Coconut-based spicy prawn curry.",
-                    Price = 399,
-                    CategoryId = mainCourseCategoryId,
-                    RestaurantId = coastalBowlId,
-                    ImageUrl = "https://images.unsplash.com/photo-1604908176997-4315f57d89b4?q=80&w=1200",
-                    IsAvailable = true
-                },
-                new Food
-                {
-                    Name = "Gulab Jamun",
-                    Description = "Soft milk dumplings in rose sugar syrup.",
-                    Price = 89,
-                    CategoryId = dessertsCategoryId,
-                    RestaurantId = coastalBowlId,
-                    ImageUrl = "https://images.unsplash.com/photo-1666190092159-3171cf0fbb12?q=80&w=1200",
-                    IsAvailable = true
-                }
-            );
+        // Ensure all existing dishes have unique, dish-specific image URLs.
+        var foodsToRefresh = context.Foods
+            .Include(f => f.Restaurant)
+            .ToList();
+
+        var refreshed = false;
+        foreach (var food in foodsToRefresh)
+        {
+            var baseDishName = food.Name.Contains(" - ", StringComparison.Ordinal)
+                ? food.Name.Split(" - ", StringSplitOptions.RemoveEmptyEntries)[0]
+                : food.Name;
+
+            var expected = BuildDishImageUrl(baseDishName, food.Restaurant?.Name ?? "Restaurant", food.RestaurantId, food.Id % 10, 0);
+            if (food.ImageUrl != expected)
+            {
+                food.ImageUrl = expected;
+                refreshed = true;
+            }
+        }
+
+        if (refreshed)
+        {
             context.SaveChanges();
         }
     }
+
+    Console.WriteLine("FoodDeliveryAPI started successfully.");
 
     await app.RunAsync();
 }
@@ -300,4 +274,172 @@ static string ConvertDatabaseUrlToConnectionString(string databaseUrl)
     };
 
     return builder.ConnectionString;
+}
+
+static void SeedRestaurants(FoodDeliveryDbContext context)
+{
+    var catalog = new List<(string Name, string Description, string Location, decimal Rating, string ImageUrl)>
+    {
+        ("Spice Route", "North Indian favorites, biryanis, and tandoor specials.", "Noida Sector 18", 4.4m, "https://images.unsplash.com/photo-1552566626-52f8b828add9?q=80&w=1200"),
+        ("Coastal Bowl", "South Indian and coastal comfort food.", "Gurgaon CyberHub", 4.3m, "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?q=80&w=1200"),
+        ("Tandoor Tales", "Signature kebabs, curries, and handcrafted breads.", "Delhi Connaught Place", 4.5m, "https://images.unsplash.com/photo-1466978913421-dad2ebd01d17?q=80&w=1200"),
+        ("Urban Biryani House", "Layered biryanis and mughlai delicacies.", "Noida Sector 62", 4.2m, "https://images.unsplash.com/photo-1481833761820-0509d3217039?q=80&w=1200"),
+        ("Wok & Flame", "Asian stir-fries, noodles, and rice bowls.", "Gurgaon Sector 29", 4.1m, "https://images.unsplash.com/photo-1578474846511-04ba529f0b88?q=80&w=1200"),
+        ("Curry Junction", "Homestyle curries and thali meals.", "Ghaziabad Indirapuram", 4.0m, "https://images.unsplash.com/photo-1414235077428-338989a2e8c0?q=80&w=1200"),
+        ("Nawabi Kitchen", "Rich Awadhi gravies and kebab platters.", "Lucknow Hazratganj", 4.6m, "https://images.unsplash.com/photo-1514933651103-005eec06c04b?q=80&w=1200"),
+        ("Punjab Express", "Butter-loaded Punjabi classics and combos.", "Chandigarh Sector 17", 4.2m, "https://images.unsplash.com/photo-1528605248644-14dd04022da1?q=80&w=1200"),
+        ("Dosa District", "Crispy dosas, idli varieties, and filter coffee.", "Bengaluru Indiranagar", 4.3m, "https://images.unsplash.com/photo-1555396273-367ea4eb4db5?q=80&w=1200"),
+        ("Roll Republic", "Kathi rolls, wraps, and quick bites.", "Kolkata Park Street", 4.1m, "https://images.unsplash.com/photo-1559339352-11d035aa65de?q=80&w=1200"),
+        ("Bombay Street Co.", "Mumbai street food and chaats.", "Mumbai Bandra", 4.3m, "https://images.unsplash.com/photo-1424847651672-bf20a4b0982b?q=80&w=1200"),
+        ("The Kebab Club", "Grilled meats and smoky starters.", "Delhi Rajouri Garden", 4.4m, "https://images.unsplash.com/photo-1550966871-3ed3cdb5ed0c?q=80&w=1200"),
+        ("Bowl Theory", "Healthy bowls and protein-rich plates.", "Pune Hinjewadi", 4.0m, "https://images.unsplash.com/photo-1414235077428-338989a2e8c0?q=80&w=1200"),
+        ("Royal Rasoi", "Festive Indian meals and family packs.", "Jaipur C-Scheme", 4.5m, "https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?q=80&w=1200"),
+        ("Pasta & Peppers", "Italian pasta, pizza, and sides.", "Hyderabad Jubilee Hills", 4.1m, "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?q=80&w=1200"),
+        ("Sushi Saga", "Fresh sushi rolls and Japanese bowls.", "Bengaluru Koramangala", 4.4m, "https://images.unsplash.com/photo-1579871494447-9811cf80d66c?q=80&w=1200"),
+        ("Mexi Fiesta", "Tacos, burritos, and loaded nachos.", "Pune Kalyani Nagar", 4.0m, "https://images.unsplash.com/photo-1555396273-367ea4eb4db5?q=80&w=1200"),
+        ("Burger Borough", "Smash burgers, fries, and shakes.", "Delhi Saket", 4.2m, "https://images.unsplash.com/photo-1559339352-11d035aa65de?q=80&w=1200"),
+        ("Pizza Planet", "Wood-fired pizzas and garlic breads.", "Noida Sector 75", 4.1m, "https://images.unsplash.com/photo-1466978913421-dad2ebd01d17?q=80&w=1200"),
+        ("Green Leaf Meals", "Vegan and salad-friendly wholesome meals.", "Gurgaon Golf Course Road", 4.0m, "https://images.unsplash.com/photo-1424847651672-bf20a4b0982b?q=80&w=1200"),
+        ("Chai & Snacks Lab", "Tea-time snacks and baked munchies.", "Ahmedabad CG Road", 4.1m, "https://images.unsplash.com/photo-1528605248644-14dd04022da1?q=80&w=1200"),
+        ("Ramen Republic", "Ramen bowls and Japanese comfort food.", "Chennai Nungambakkam", 4.3m, "https://images.unsplash.com/photo-1481833761820-0509d3217039?q=80&w=1200"),
+        ("Grill Garden", "BBQ platters and grilled signature dishes.", "Indore Vijay Nagar", 4.2m, "https://images.unsplash.com/photo-1550966871-3ed3cdb5ed0c?q=80&w=1200"),
+        ("Dessert Den", "Cakes, brownies, and chilled desserts.", "Kolkata Salt Lake", 4.4m, "https://images.unsplash.com/photo-1414235077428-338989a2e8c0?q=80&w=1200"),
+        ("Midnight Munchies", "Late-night combos and comfort food.", "Mumbai Andheri", 4.0m, "https://images.unsplash.com/photo-1514933651103-005eec06c04b?q=80&w=1200")
+    };
+
+    var existingNames = context.Restaurants.Select(r => r.Name).ToHashSet(StringComparer.OrdinalIgnoreCase);
+    var missingRestaurants = catalog
+        .Where(r => !existingNames.Contains(r.Name))
+        .Select(r => new Restaurant
+        {
+            Name = r.Name,
+            Description = r.Description,
+            Location = r.Location,
+            Rating = r.Rating,
+            ImageUrl = r.ImageUrl,
+            CreatedAt = DateTime.UtcNow
+        })
+        .ToList();
+
+    if (missingRestaurants.Any())
+    {
+        context.Restaurants.AddRange(missingRestaurants);
+        context.SaveChanges();
+    }
+}
+
+static void SeedFoods(FoodDeliveryDbContext context, int targetFoodCount)
+{
+    var restaurants = context.Restaurants.OrderBy(r => r.Id).ToList();
+    if (!restaurants.Any()) return;
+
+    var categoryIds = context.FoodCategories.ToDictionary(c => c.Name, c => c.Id);
+    var startersId = categoryIds["Starters"];
+    var mainCourseId = categoryIds["Main Course"];
+    var dessertsId = categoryIds["Desserts"];
+    var beveragesId = categoryIds["Beverages"];
+
+    var starters = new[]
+    {
+        "Paneer Tikka", "Crispy Corn", "Veg Spring Roll", "Chicken 65", "Hara Bhara Kebab",
+        "Peri Peri Fries", "Chilli Paneer", "Honey Chilli Potato", "Tandoori Wings", "Stuffed Mushrooms"
+    };
+
+    var mains = new[]
+    {
+        "Butter Chicken", "Kadai Paneer", "Dal Makhani", "Chicken Biryani", "Veg Biryani",
+        "Mutton Rogan Josh", "Prawn Curry", "Thai Green Curry", "Veg Alfredo Pasta", "Paneer Butter Masala",
+        "Fish Tikka Masala", "Hyderabadi Dum Biryani", "Chole Bhature Combo", "Rajma Chawal Bowl", "Schezwan Noodles"
+    };
+
+    var desserts = new[]
+    {
+        "Gulab Jamun", "Brownie Sundae", "Rasmalai", "Chocolate Mousse", "Kulfi Falooda",
+        "Cheesecake Slice", "Shahi Tukda", "Tiramisu Cup"
+    };
+
+    var beverages = new[]
+    {
+        "Masala Chaas", "Lemon Iced Tea", "Cold Coffee", "Mango Shake", "Fresh Lime Soda",
+        "Filter Coffee", "Mint Mojito", "Hot Chocolate"
+    };
+
+    var existingKeys = context.Foods.Select(f => $"{f.RestaurantId}:{f.Name}").ToHashSet(StringComparer.OrdinalIgnoreCase);
+    var newFoods = new List<Food>();
+    var currentCount = context.Foods.Count();
+    var cycle = 0;
+
+    while (currentCount + newFoods.Count < targetFoodCount)
+    {
+        foreach (var restaurant in restaurants)
+        {
+            for (var slot = 0; slot < 10 && currentCount + newFoods.Count < targetFoodCount; slot++)
+            {
+                var (categoryId, baseName, imageUrl, basePrice) = slot switch
+                {
+                    0 or 1 or 2 =>
+                        (startersId,
+                        starters[(restaurant.Id + slot + cycle) % starters.Length],
+                        string.Empty,
+                        149m),
+                    3 or 4 or 5 or 6 =>
+                        (mainCourseId,
+                        mains[(restaurant.Id + slot + cycle) % mains.Length],
+                        string.Empty,
+                        239m),
+                    7 or 8 =>
+                        (dessertsId,
+                        desserts[(restaurant.Id + slot + cycle) % desserts.Length],
+                        string.Empty,
+                        99m),
+                    _ =>
+                        (beveragesId,
+                        beverages[(restaurant.Id + slot + cycle) % beverages.Length],
+                        string.Empty,
+                        79m)
+                };
+
+                var name = $"{baseName} - {restaurant.Name}";
+                var key = $"{restaurant.Id}:{name}";
+                if (existingKeys.Contains(key))
+                {
+                    continue;
+                }
+
+                var price = basePrice + ((restaurant.Id + slot + cycle) % 12) * 10;
+                var dishImageUrl = BuildDishImageUrl(baseName, restaurant.Name, restaurant.Id, slot, cycle);
+                newFoods.Add(new Food
+                {
+                    Name = name,
+                    Description = $"{baseName} crafted fresh by {restaurant.Name}.",
+                    Price = price,
+                    CategoryId = categoryId,
+                    RestaurantId = restaurant.Id,
+                    ImageUrl = dishImageUrl,
+                    IsAvailable = true,
+                    CreatedAt = DateTime.UtcNow
+                });
+
+                existingKeys.Add(key);
+            }
+        }
+
+        cycle++;
+        if (cycle > 20) break;
+    }
+
+    if (newFoods.Any())
+    {
+        context.Foods.AddRange(newFoods);
+        context.SaveChanges();
+    }
+}
+
+static string BuildDishImageUrl(string dishName, string restaurantName, int restaurantId, int slot, int cycle)
+{
+    var query = Uri.EscapeDataString($"{dishName} indian food plated");
+    var sig = Math.Abs(HashCode.Combine(restaurantName, dishName, restaurantId, slot, cycle)) % 100000;
+
+    // Query-specific + signature to force unique authentic food photos per dish.
+    return $"https://source.unsplash.com/1600x1000/?{query}&sig={sig}";
 }

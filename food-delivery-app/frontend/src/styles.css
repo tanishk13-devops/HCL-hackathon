@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800&family=Poppins:wght@400;500;600;700&display=swap');
+
 /* Modern GenZ Style CSS */
 :root {
   --primary: #FF3366;
@@ -22,14 +24,14 @@ body {
   -webkit-font-smoothing: antialiased;
   background-image: radial-gradient(at 0% 0%, hsla(347,100%,79%,0.15) 0px, transparent 50%),
                     radial-gradient(at 100% 0%, hsla(262,83%,78%,0.15) 0px, transparent 50%);
-  background-attachment: fixed;
+  background-attachment: scroll;
 }
 
 /* Glassmorphism Containers */
 .glass-panel {
   background: var(--glass);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
   border: 1px solid rgba(255, 255, 255, 0.5);
   box-shadow: var(--shadow-lg);
   border-radius: var(--radius-xl);
@@ -74,4 +76,56 @@ button {
 
 button:active {
   transform: scale(0.95);
+}
+
+.btn-ripple {
+  position: relative;
+  overflow: hidden;
+}
+
+.btn-ripple::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle, rgba(255,255,255,.45) 0%, rgba(255,255,255,0) 55%);
+  transform: scale(0);
+  opacity: 0;
+  transition: transform .35s ease, opacity .35s ease;
+}
+
+.btn-ripple:active::after {
+  transform: scale(2.2);
+  opacity: 1;
+}
+
+.loader-spinner {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  border: 3px solid #e2e8f0;
+  border-top-color: #7c3aed;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.skeleton {
+  position: relative;
+  overflow: hidden;
+  background: #e2e8f0;
+}
+
+.skeleton::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.6), transparent);
+  animation: shimmer 1.2s infinite;
+}
+
+@keyframes shimmer {
+  100% { transform: translateX(100%); }
 }

@@ -14,6 +14,7 @@ import { Cart } from '../../models/cart.model';
 })
 export class CartComponent implements OnInit {
   cart: Cart = { cartItems: [] };
+  error = '';
 
   constructor(
     private cartService: CartService,
@@ -21,17 +22,37 @@ export class CartComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
-    this.cartService.loadCart().subscribe({ next: c => this.cart = c });
+    this.cartService.loadCart().subscribe({
+      next: c => {
+        this.cart = c;
+        this.error = '';
+      },
+      error: (err) => {
+        if (err?.status === 401) {
+          this.error = 'Please login to view your cart.';
+          this.router.navigate(['/login']);
+          return;
+        }
+
+        this.error = 'Unable to load cart right now.';
+      }
+    });
     this.cartService.cart$.subscribe(c => this.cart = c);
   }
 
   removeItem(foodItemId: number): void {
-    this.cartService.removeFromCart(foodItemId).subscribe({ next: c => this.cart = c });
+    this.cartService.removeFromCart(foodItemId).subscribe({
+      next: c => this.cart = c,
+      error: () => this.error = 'Unable to remove item right now.'
+    });
   }
 
   updateQuantity(foodItemId: number, quantity: number): void {
     if (quantity > 0) {
-      this.cartService.updateQuantity(foodItemId, quantity).subscribe({ next: c => this.cart = c });
+      this.cartService.updateQuantity(foodItemId, quantity).subscribe({
+        next: c => this.cart = c,
+        error: () => this.error = 'Unable to update quantity right now.'
+      });
     }
   }
 

@@ -1,32 +1,48 @@
 <div class="menu-container">
   <h1>Restaurant Menu</h1>
   
-  <div class="filters">
-    <label>Filter by Category (client-side):</label>
+  <div class="filters glass-panel sticky-bar">
+    <input
+      type="text"
+      [(ngModel)]="searchTerm"
+      (input)="onSearchChange()"
+      placeholder="Search dishes (name or description)"
+    />
+
     <select [(ngModel)]="selectedCategory" (change)="onCategoryChange()">
       <option value="">All Categories</option>
       <option *ngFor="let category of categories">{{ category }}</option>
     </select>
-    <a routerLink="/cart" class="btn-add">Go To Cart</a>
+
+    <select [(ngModel)]="sortBy" (change)="onSortChange()">
+      <option value="recommended">Sort: Recommended</option>
+      <option value="priceLowToHigh">Price: Low to High</option>
+      <option value="priceHighToLow">Price: High to Low</option>
+      <option value="nameAsc">Name: A-Z</option>
+    </select>
+
+    <button class="btn-add btn-ripple" type="button" (click)="clearFilters()">Reset</button>
+    <a routerLink="/cart" class="btn-add btn-ripple">Go To Cart</a>
   </div>
 
-  <div *ngIf="loading" class="loading">Loading menu...</div>
+  <p *ngIf="addSuccessMessage" class="success-pop">{{ addSuccessMessage }}</p>
+  <p class="result-text" *ngIf="!loading">Showing {{ filteredFoods.length }} item(s)</p>
+
+  <div *ngIf="loading" class="loading-stack">
+    <div class="loader-spinner"></div>
+    <p class="loading">Loading menu...</p>
+
+    <div class="food-grid">
+      <article class="skeleton-card" *ngFor="let _ of skeletonItems">
+        <div class="skeleton skeleton-image"></div>
+        <div class="skeleton skeleton-line"></div>
+        <div class="skeleton skeleton-line short"></div>
+      </article>
+    </div>
+  </div>
 
   <div class="food-grid" *ngIf="!loading">
     <div *ngIf="filteredFoods.length === 0" class="no-items">No items available</div>
-    <div class="food-card" *ngFor="let food of filteredFoods">
-      <div class="food-image" [style.background-image]="'url(' + getFoodImage(food) + ')' "></div>
-      <div class="food-details">
-        <h3>{{ food.name }}</h3>
-        <p class="category">{{ food.category?.name || food.categoryName || 'Category' }}</p>
-        <p class="description">{{ food.description }}</p>
-        <div class="footer">
-          <span class="price">₹{{ food.price }}</span>
-          <button (click)="addToCart(food)" [disabled]="food.isAvailable === false" class="btn-add">
-            {{ food.isAvailable === false ? 'Out of Stock' : 'Add to Cart' }}
-          </button>
-        </div>
-      </div>
-    </div>
+    <app-food-card *ngFor="let food of filteredFoods" [food]="food" (add)="addToCart($event)"></app-food-card>
   </div>
 </div>

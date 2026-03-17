@@ -1,32 +1,111 @@
 <div class="home-container">
-  <div class="hero-section">
-    <div class="brand-pill">Ziggy</div>
-    <h1>{{ title }}</h1>
-    <p>Real food. Delivered fast.</p>
+  <section class="hero-section glass-panel">
+    <div class="brand-pill">🚀 Live Delivery Platform</div>
+    <h1>{{ title }} — Real food. Delivered fast.</h1>
+    <p class="typed-text">{{ animatedHeroText }}<span class="cursor">|</span></p>
+
     <div class="cta-buttons">
-      <a routerLink="/restaurants" class="btn btn-primary">Browse Restaurants</a>
-      <a routerLink="/register" class="btn btn-secondary">Create Account</a>
+      <a routerLink="/restaurants" class="btn btn-primary">Explore Restaurants</a>
+      <a routerLink="/register" class="btn btn-secondary">Create Free Account</a>
     </div>
+
     <div class="hero-stats">
-      <div>
-        <span class="stat-value">30+</span>
-        <span class="stat-label">Top-rated dishes</span>
+      <div class="stat-card">
+        <span class="stat-value">{{ restaurantsCount }}+</span>
+        <span class="stat-label">Partner restaurants</span>
       </div>
-      <div>
+      <div class="stat-card">
         <span class="stat-value">20 min</span>
         <span class="stat-label">Avg. delivery</span>
       </div>
-      <div>
-        <span class="stat-value">4.8★</span>
-        <span class="stat-label">Customer rating</span>
+      <div class="stat-card">
+        <span class="stat-value">{{ deliveredOrdersCount }}+</span>
+        <span class="stat-label">Orders delivered</span>
       </div>
     </div>
-  </div>
+  </section>
 
-  <div class="features">
-    <h2>Why Choose Ziggy?</h2>
+  <section class="features glass-panel">
+    <h2>Why customers choose {{ title }}</h2>
     <ul>
-      <li *ngFor="let feature of features">{{ feature }}</li>
+      <li *ngFor="let feature of features">✨ {{ feature }}</li>
     </ul>
-  </div>
+  </section>
+
+  <section class="featured-section">
+    <div class="section-head">
+      <h2>Featured restaurants</h2>
+      <a routerLink="/restaurants">View all</a>
+    </div>
+
+    <div class="spinner-wrap" *ngIf="loadingFeatured">
+      <div class="loader-spinner"></div>
+    </div>
+
+    <div class="featured-grid" *ngIf="!loadingFeatured">
+      <a class="featured-card" *ngFor="let restaurant of featuredRestaurants" [routerLink]="['/restaurant-menu', restaurant.id]">
+        <img [src]="restaurant.imageUrl" [alt]="restaurant.name" />
+        <div class="overlay">
+          <h3>{{ restaurant.name }}</h3>
+          <p>📍 {{ restaurant.location }} · ⭐ {{ restaurant.rating }}</p>
+        </div>
+      </a>
+    </div>
+  </section>
+
+  <section class="carousel-section glass-panel">
+    <div class="section-head">
+      <h2>Trending now</h2>
+      <div class="controls">
+        <button class="control-btn btn-ripple" (click)="prevSlide()">‹</button>
+        <button class="control-btn btn-ripple" (click)="nextSlide()">›</button>
+      </div>
+    </div>
+
+    <div class="spinner-wrap" *ngIf="loadingTrending">
+      <div class="loader-spinner"></div>
+    </div>
+
+    <div class="carousel-frame" *ngIf="!loadingTrending && trendingFoods.length">
+      <div class="carousel-track" [style.transform]="'translateX(-' + (activeSlide * 100) + '%)'">
+        <article class="slide" *ngFor="let food of trendingFoods">
+          <img [src]="food.imageUrl" [alt]="food.name" />
+          <div class="slide-body">
+            <h3>{{ food.name }}</h3>
+            <p>{{ food.description }}</p>
+            <span>₹{{ food.price }}</span>
+          </div>
+        </article>
+      </div>
+    </div>
+
+    <div class="dots" *ngIf="!loadingTrending && trendingFoods.length > 1">
+      <button
+        *ngFor="let _ of trendingFoods; let i = index"
+        [class.active]="activeSlide === i"
+        (click)="goToSlide(i)">
+      </button>
+    </div>
+  </section>
+
+  <section class="flow-section">
+    <h2>How it works</h2>
+    <div class="flow-grid">
+      <article class="flow-card">
+        <span class="step">01</span>
+        <h3>Pick a restaurant</h3>
+        <p>Browse by location, rating, and cuisine style.</p>
+      </article>
+      <article class="flow-card">
+        <span class="step">02</span>
+        <h3>Customize your meal</h3>
+        <p>Filter categories and add dishes to cart instantly.</p>
+      </article>
+      <article class="flow-card">
+        <span class="step">03</span>
+        <h3>Track order live</h3>
+        <p>Follow preparation and delivery from one dashboard.</p>
+      </article>
+    </div>
+  </section>
 </div>

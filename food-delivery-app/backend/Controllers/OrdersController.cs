@@ -52,7 +52,7 @@ namespace FoodDeliveryAPI.Controllers
         }
 
         [HttpPost]
-        [Authorize(Roles = "Customer")]
+        [Authorize(Roles = "Customer,Admin")]
         public async Task<IActionResult> PlaceOrder([FromBody] PlaceOrderRequest request)
         {
             try

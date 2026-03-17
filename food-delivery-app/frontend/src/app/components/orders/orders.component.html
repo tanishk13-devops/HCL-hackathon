@@ -1,7 +1,10 @@
 <div class="orders-container">
   <h1>My Orders</h1>
   
-  <div *ngIf="loading" class="loading">Loading orders...</div>
+  <div *ngIf="loading" class="loading">
+    <div class="loader-spinner"></div>
+    <p>Loading orders...</p>
+  </div>
 
   <div *ngIf="!loading && orders.length === 0" class="no-orders">
     You haven't placed any orders yet
@@ -50,7 +53,7 @@
       </div>
 
       <div class="track-row">
-        <a class="track-btn" [routerLink]="['/order-tracking']" [queryParams]="{ orderId: order.id }">Track Order</a>
+        <a class="track-btn btn-ripple" [routerLink]="['/order-tracking']" [queryParams]="{ orderId: order.id }">Track Order</a>
       </div>
     </div>
   </div>

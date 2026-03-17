@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable, BehaviorSubject } from 'rxjs';
+import { Observable, BehaviorSubject, catchError, of } from 'rxjs';
 import { Food } from '../models/food.model';
 import { environment } from '../../environments/environment';
 
@@ -11,6 +11,52 @@ export class FoodService {
   private apiUrl = `${environment.apiUrl}/food-items`;
   private foodsSubject = new BehaviorSubject<Food[]>([]);
   public foods$ = this.foodsSubject.asObservable();
+  private readonly fallbackFoods: Food[] = [
+    {
+      id: 101,
+      name: 'Butter Chicken',
+      description: 'Classic creamy tomato gravy with tender chicken.',
+      price: 349,
+      categoryId: 1,
+      categoryName: 'Main Course',
+      restaurantId: 1,
+      imageUrl: 'https://images.pexels.com/photos/7625056/pexels-photo-7625056.jpeg?auto=compress&cs=tinysrgb&w=1200',
+      isAvailable: true
+    },
+    {
+      id: 102,
+      name: 'Paneer Tikka',
+      description: 'Tandoor roasted paneer cubes and peppers.',
+      price: 229,
+      categoryId: 3,
+      categoryName: 'Starters',
+      restaurantId: 1,
+      imageUrl: 'https://images.unsplash.com/photo-1599487488170-d11ec9c172f0?q=80&w=1200',
+      isAvailable: true
+    },
+    {
+      id: 201,
+      name: 'Prawn Curry',
+      description: 'Coconut-based spicy prawn curry.',
+      price: 399,
+      categoryId: 1,
+      categoryName: 'Main Course',
+      restaurantId: 2,
+      imageUrl: 'https://images.unsplash.com/photo-1604908176997-4315f57d89b4?q=80&w=1200',
+      isAvailable: true
+    },
+    {
+      id: 202,
+      name: 'Gulab Jamun',
+      description: 'Soft milk dumplings in rose sugar syrup.',
+      price: 89,
+      categoryId: 2,
+      categoryName: 'Desserts',
+      restaurantId: 2,
+      imageUrl: 'https://images.unsplash.com/photo-1666190092159-3171cf0fbb12?q=80&w=1200',
+      isAvailable: true
+    }
+  ];
 
   constructor(private http: HttpClient) {
     this.loadFoods();
@@ -26,7 +72,16 @@ export class FoodService {
 
   getRestaurantMenu(restaurantId: number, categoryId?: number): Observable<Food[]> {
     const query = categoryId ? `?categoryId=${categoryId}` : '';
-    return this.http.get<Food[]>(`${this.apiUrl}/restaurant/${restaurantId}${query}`);
+    return this.http.get<Food[]>(`${this.apiUrl}/restaurant/${restaurantId}${query}`).pipe(
+      catchError(() => {
+        let data = this.fallbackFoods.filter(f => f.restaurantId === restaurantId);
+        if (categoryId) {
+          data = data.filter(f => f.categoryId === categoryId);
+        }
+
+        return of(data);
+      })
+    );
   }
 
   getFoodById(id: number): Observable<Food> {

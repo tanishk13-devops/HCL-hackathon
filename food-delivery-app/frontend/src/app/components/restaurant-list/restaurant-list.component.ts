@@ -13,8 +13,12 @@ import { RestaurantService } from '../../services/restaurant.service';
   styleUrls: ['./restaurant-list.component.css']
 })
 export class RestaurantListComponent implements OnInit {
+  allRestaurants: Restaurant[] = [];
   restaurants: Restaurant[] = [];
   search = '';
+  locations: string[] = [];
+  selectedLocation = '';
+  sortBy: 'recommended' | 'ratingDesc' | 'ratingAsc' | 'nameAsc' = 'recommended';
   loading = false;
 
   constructor(private restaurantService: RestaurantService) {}
@@ -27,12 +31,44 @@ export class RestaurantListComponent implements OnInit {
     this.loading = true;
     this.restaurantService.getRestaurants(this.search).subscribe({
       next: (data) => {
-        this.restaurants = data;
+        this.allRestaurants = data;
+        this.locations = [...new Set(data.map(r => r.location).filter(Boolean) as string[])].sort();
+        this.applyFilters();
         this.loading = false;
       },
       error: () => {
         this.loading = false;
       }
     });
+  }
+
+  applyFilters(): void {
+    let list = [...this.allRestaurants];
+
+    if (this.selectedLocation) {
+      list = list.filter(r => r.location === this.selectedLocation);
+    }
+
+    switch (this.sortBy) {
+      case 'ratingDesc':
+        list.sort((a, b) => (b.rating || 0) - (a.rating || 0));
+        break;
+      case 'ratingAsc':
+        list.sort((a, b) => (a.rating || 0) - (b.rating || 0));
+        break;
+      case 'nameAsc':
+        list.sort((a, b) => a.name.localeCompare(b.name));
+        break;
+      default:
+        break;
+    }
+
+    this.restaurants = list;
+  }
+
+  clearFilters(): void {
+    this.selectedLocation = '';
+    this.sortBy = 'recommended';
+    this.applyFilters();
   }
 }

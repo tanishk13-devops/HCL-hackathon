@@ -21,6 +21,7 @@ export class CheckoutComponent implements OnInit {
   selectedAddressId?: number;
   paymentMethod = 'CashOnDelivery';
   loading = false;
+  error = '';
 
   newAddress = { street: '', city: '', state: '', pincode: '' };
 
@@ -32,7 +33,12 @@ export class CheckoutComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
-    this.cartService.loadCart().subscribe({ next: c => this.cart = c });
+    this.cartService.loadCart().subscribe({
+      next: c => this.cart = c,
+      error: () => {
+        this.error = 'Unable to load cart. Please login and retry.';
+      }
+    });
     this.loadAddresses();
   }
 
@@ -41,6 +47,9 @@ export class CheckoutComponent implements OnInit {
       next: (a) => {
         this.addresses = a;
         this.selectedAddressId = a[0]?.id;
+      },
+      error: () => {
+        this.error = 'Unable to load addresses. Please login first.';
       }
     });
   }
@@ -50,20 +59,48 @@ export class CheckoutComponent implements OnInit {
       next: () => {
         this.newAddress = { street: '', city: '', state: '', pincode: '' };
         this.loadAddresses();
+      },
+      error: () => {
+        this.error = 'Could not add address. Check your session and try again.';
       }
     });
   }
 
   placeOrder(): void {
-    if (!this.selectedAddressId) return;
+    if (!this.selectedAddressId) {
+      this.error = 'Please select or add a delivery address before placing the order.';
+      return;
+    }
+
+    if (!this.cart.cartItems.length) {
+      this.error = 'Your cart is empty. Add items before placing an order.';
+      return;
+    }
 
     this.loading = true;
+    this.error = '';
     this.orderService.placeOrder(this.selectedAddressId, this.paymentMethod).subscribe({
       next: (order) => {
         this.loading = false;
         this.router.navigate(['/order-tracking'], { queryParams: { orderId: order.id } });
       },
-      error: () => this.loading = false
+      error: (err) => {
+        this.loading = false;
+        if (err?.status === 401) {
+          this.error = 'Session expired. Please login again.';
+          this.router.navigate(['/login']);
+          return;
+        }
+
+        if (err?.status === 403) {
+          this.error = 'Your role is not allowed to place orders. Login as Customer/Admin.';
+          return;
+        }
+
+        this.error = typeof err?.error === 'string'
+          ? err.error
+          : (err?.error?.message || 'Failed to place order. Please ensure you are logged in and backend is running.');
+      }
     });
   }
 

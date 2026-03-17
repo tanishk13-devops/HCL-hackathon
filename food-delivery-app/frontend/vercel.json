@@ -1,0 +1,9 @@
+{
+  "framework": "angular",
+  "installCommand": "npm ci",
+  "buildCommand": "npm run build:prod",
+  "outputDirectory": "dist/food-delivery-app",
+  "rewrites": [
+    { "source": "/(.*)", "destination": "/index.html" }
+  ]
+}
