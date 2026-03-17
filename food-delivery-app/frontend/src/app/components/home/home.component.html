@@ -1,4 +1,8 @@
 <div class="home-container">
+  <section class="glass-panel" *ngIf="apiError">
+    <p>{{ apiError }}</p>
+  </section>
+
   <section class="hero-section glass-panel">
     <div class="brand-pill">🚀 Live Delivery Platform</div>
     <h1>{{ title }} — Real food. Delivered fast.</h1>

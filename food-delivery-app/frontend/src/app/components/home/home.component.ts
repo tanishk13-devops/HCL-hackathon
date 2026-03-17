@@ -28,6 +28,7 @@ export class HomeComponent implements OnInit, OnDestroy {
   restaurantsCount = 0;
   deliveredOrdersCount = 0;
   activeSlide = 0;
+  apiError = '';
 
   features = [
     'Fresh, chef-crafted meals every day',
@@ -66,6 +67,7 @@ export class HomeComponent implements OnInit, OnDestroy {
   private loadFeaturedRestaurants(): void {
     this.restaurantService.getRestaurants().subscribe({
       next: (data) => {
+        this.apiError = '';
         this.featuredRestaurants = data.slice(0, 6);
         this.loadingFeatured = false;
         this.animateCounter('restaurants', data.length);
@@ -74,6 +76,8 @@ export class HomeComponent implements OnInit, OnDestroy {
       },
       error: () => {
         this.loadingFeatured = false;
+        this.loadingTrending = false;
+        this.apiError = 'Backend is not reachable. Please start API server and refresh.';
       }
     });
   }

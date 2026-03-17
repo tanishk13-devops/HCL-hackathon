@@ -15,6 +15,7 @@ import { RestaurantService } from '../../services/restaurant.service';
 export class RestaurantListComponent implements OnInit {
   allRestaurants: Restaurant[] = [];
   restaurants: Restaurant[] = [];
+  errorMessage = '';
   search = '';
   locations: string[] = [];
   selectedLocation = '';
@@ -29,6 +30,7 @@ export class RestaurantListComponent implements OnInit {
 
   load(): void {
     this.loading = true;
+    this.errorMessage = '';
     this.restaurantService.getRestaurants(this.search).subscribe({
       next: (data) => {
         this.allRestaurants = data;
@@ -37,6 +39,9 @@ export class RestaurantListComponent implements OnInit {
         this.loading = false;
       },
       error: () => {
+        this.allRestaurants = [];
+        this.restaurants = [];
+        this.errorMessage = 'Could not load restaurants. Start backend API and try again.';
         this.loading = false;
       }
     });

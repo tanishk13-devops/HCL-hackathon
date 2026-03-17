@@ -32,6 +32,10 @@
     <p>Loading restaurants...</p>
   </div>
 
+  <div class="header-card glass-panel" *ngIf="!loading && errorMessage">
+    <p>{{ errorMessage }}</p>
+  </div>
+
   <div class="grid" *ngIf="!loading">
     <a class="card" *ngFor="let restaurant of restaurants" [routerLink]="['/restaurant-menu', restaurant.id]">
       <img [src]="restaurant.imageUrl || 'https://via.placeholder.com/500x280?text=Restaurant'" alt="restaurant" />
