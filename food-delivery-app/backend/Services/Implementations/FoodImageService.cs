@@ -5,7 +5,7 @@ namespace FoodDeliveryAPI.Services.Implementations
 {
     public class FoodImageService : IFoodImageService
     {
-        private const string PlaceholderImage = "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=1200&q=80";
+        private const string PlaceholderImage = "https://dummyimage.com/1200x800/111827/f9fafb&text=Food+Image";
         private readonly IHttpClientFactory _httpClientFactory;
         private readonly IConfiguration _configuration;
         private readonly ILogger<FoodImageService> _logger;
@@ -45,9 +45,8 @@ namespace FoodDeliveryAPI.Services.Implementations
                 if (!string.IsNullOrWhiteSpace(unsplashUrl)) return unsplashUrl;
             }
 
-            // 3) Unsplash source fallback (no key required)
-            var sourceUrl = BuildUnsplashSourceUrl(normalized);
-            return string.IsNullOrWhiteSpace(sourceUrl) ? PlaceholderImage : sourceUrl;
+            // 3) Deterministic fallback by dish name (always matches name)
+            return BuildDishNameFallbackImageUrl(normalized);
         }
 
         private async Task<string?> TryGetFromPexelsAsync(string foodName, string apiKey, CancellationToken cancellationToken)
@@ -128,10 +127,10 @@ namespace FoodDeliveryAPI.Services.Implementations
             return null;
         }
 
-        private static string BuildUnsplashSourceUrl(string foodName)
+        private static string BuildDishNameFallbackImageUrl(string foodName)
         {
-            var query = Uri.EscapeDataString($"{foodName} food plated");
-            return $"https://source.unsplash.com/1600x1000/?{query}";
+            var text = Uri.EscapeDataString(foodName);
+            return $"https://dummyimage.com/1200x800/111827/f9fafb&text={text}";
         }
     }
 }
