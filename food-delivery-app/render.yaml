@@ -24,7 +24,7 @@ services:
 
   - type: web
     name: ziggy-frontend
-    runtime: static
+    env: static
     rootDir: frontend
     plan: free
     autoDeploy: true
