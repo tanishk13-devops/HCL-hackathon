@@ -29,6 +29,13 @@ namespace FoodDeliveryAPI.Services.Implementations
 
             var normalized = foodName.Trim();
 
+            // 0) Exact configured mapping (dish name -> image URL)
+            var configuredImage = _configuration[$"FoodImage:SeedImageMap:{normalized}"];
+            if (!string.IsNullOrWhiteSpace(configuredImage) && Uri.IsWellFormedUriString(configuredImage, UriKind.Absolute))
+            {
+                return configuredImage;
+            }
+
             // 1) Pexels (if API key configured)
             var pexelsKey = _configuration["FoodImage:Providers:Pexels:ApiKey"];
             if (!string.IsNullOrWhiteSpace(pexelsKey))
