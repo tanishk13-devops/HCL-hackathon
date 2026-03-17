@@ -209,12 +209,11 @@ try
             SeedRestaurants(context);
         }
 
-        var dishImageRules = GetDishImageRules(app.Configuration);
         var foodImageService = services.GetRequiredService<IFoodImageService>();
 
         if (context.Foods.Count() < 250)
         {
-            SeedFoods(context, 250, dishImageRules);
+            await SeedFoodsAsync(context, 250, foodImageService);
         }
 
         // Ensure all existing dishes have unique, dish-specific image URLs.
@@ -229,8 +228,7 @@ try
                 ? food.Name.Split(" - ", StringSplitOptions.RemoveEmptyEntries)[0]
                 : food.Name;
 
-            var expected = TryMatchConfiguredDishImageUrl(baseDishName, dishImageRules)
-                ?? await foodImageService.GetFoodImageUrlAsync(baseDishName);
+            var expected = await foodImageService.GetFoodImageUrlAsync(baseDishName);
             if (food.ImageUrl != expected)
             {
                 food.ImageUrl = expected;
@@ -332,7 +330,7 @@ static void SeedRestaurants(FoodDeliveryDbContext context)
     }
 }
 
-static void SeedFoods(FoodDeliveryDbContext context, int targetFoodCount, IReadOnlyList<(string Keyword, string Url)> dishImageRules)
+static async Task SeedFoodsAsync(FoodDeliveryDbContext context, int targetFoodCount, IFoodImageService foodImageService)
 {
     var restaurants = context.Restaurants.OrderBy(r => r.Id).ToList();
     if (!restaurants.Any()) return;
@@ -411,8 +409,7 @@ static void SeedFoods(FoodDeliveryDbContext context, int targetFoodCount, IReadO
                 }
 
                 var price = basePrice + ((restaurant.Id + slot + cycle) % 12) * 10;
-                var dishImageUrl = TryMatchConfiguredDishImageUrl(baseName, dishImageRules)
-                    ?? BuildFallbackDishImageUrl(baseName, restaurant.Name, restaurant.Id, slot, cycle);
+                var dishImageUrl = await foodImageService.GetFoodImageUrlAsync(baseName);
                 newFoods.Add(new Food
                 {
                     Name = name,
@@ -438,39 +435,4 @@ static void SeedFoods(FoodDeliveryDbContext context, int targetFoodCount, IReadO
         context.Foods.AddRange(newFoods);
         context.SaveChanges();
     }
-}
-
-static string? TryMatchConfiguredDishImageUrl(string dishName, IReadOnlyList<(string Keyword, string Url)> dishImageRules)
-{
-    var name = dishName.Trim().ToLowerInvariant();
-
-    foreach (var (keyword, url) in dishImageRules)
-    {
-        if (name.Contains(keyword, StringComparison.OrdinalIgnoreCase))
-        {
-            return url;
-        }
-    }
-
-    return null;
-}
-
-static string BuildFallbackDishImageUrl(string dishName, string restaurantName, int restaurantId, int slot, int cycle)
-{
-    var query = Uri.EscapeDataString($"{dishName} plated food");
-    var sig = Math.Abs(HashCode.Combine(restaurantName, dishName, restaurantId, slot, cycle)) % 100000;
-    return $"https://source.unsplash.com/1600x1000/?{query}&sig={sig}";
-}
-
-static List<(string Keyword, string Url)> GetDishImageRules(IConfiguration configuration)
-{
-    var rules = configuration
-        .GetSection("FoodImage:SeedImageMap")
-        .GetChildren()
-        .Select(c => (Keyword: c.Key.Trim().ToLowerInvariant(), Url: (c.Value ?? string.Empty).Trim()))
-        .Where(x => !string.IsNullOrWhiteSpace(x.Keyword) && Uri.IsWellFormedUriString(x.Url, UriKind.Absolute))
-        .OrderByDescending(x => x.Keyword.Length)
-        .ToList();
-
-    return rules;
 }
