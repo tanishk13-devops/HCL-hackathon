@@ -2,7 +2,7 @@ services:
   - type: web
     name: ziggy-api
     env: docker
-    rootDir: food-delivery-app/backend
+    rootDir: backend
     autoDeploy: true
     healthCheckPath: /health
     envVars:
