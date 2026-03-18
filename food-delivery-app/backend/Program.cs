@@ -128,6 +128,7 @@ builder.Services.AddCors(options =>
 
 var app = builder.Build();
 var seedDataOnStartup = app.Configuration.GetValue<bool?>("SeedDataOnStartup") ?? app.Environment.IsDevelopment();
+var seedFullCatalogOnStartup = app.Configuration.GetValue<bool?>("SeedFullCatalogOnStartup") ?? app.Environment.IsDevelopment();
 
 var renderPort = Environment.GetEnvironmentVariable("PORT");
 if (!string.IsNullOrWhiteSpace(renderPort))
@@ -169,7 +170,7 @@ try
 
     if (seedDataOnStartup)
     {
-        await TryInitializeAndSeedDataAsync(app.Services, app.Logger);
+        await TryInitializeAndSeedDataAsync(app.Services, app.Logger, seedFullCatalogOnStartup);
     }
     else
     {
@@ -212,7 +213,7 @@ static string ConvertDatabaseUrlToConnectionString(string databaseUrl)
     return builder.ConnectionString;
 }
 
-static async Task TryInitializeAndSeedDataAsync(IServiceProvider rootServices, ILogger logger)
+static async Task TryInitializeAndSeedDataAsync(IServiceProvider rootServices, ILogger logger, bool seedFullCatalog)
 {
     const int maxAttempts = 3;
 
@@ -276,36 +277,39 @@ static async Task TryInitializeAndSeedDataAsync(IServiceProvider rootServices, I
                 SeedRestaurants(context);
             }
 
-            var foodImageService = services.GetRequiredService<IFoodImageService>();
-
-            if (context.Foods.Count() < 250)
+            if (seedFullCatalog)
             {
-                await SeedFoodsAsync(context, 250, foodImageService);
-            }
+                var foodImageService = services.GetRequiredService<IFoodImageService>();
 
-            // Ensure all existing dishes have unique, dish-specific image URLs.
-            var foodsToRefresh = context.Foods
-                .Include(f => f.Restaurant)
-                .ToList();
-
-            var refreshed = false;
-            foreach (var food in foodsToRefresh)
-            {
-                var baseDishName = food.Name.Contains(" - ", StringComparison.Ordinal)
-                    ? food.Name.Split(" - ", StringSplitOptions.RemoveEmptyEntries)[0]
-                    : food.Name;
-
-                var expected = await ResolveDishImageUrlAsync(baseDishName, foodImageService);
-                if (food.ImageUrl != expected)
+                if (context.Foods.Count() < 250)
                 {
-                    food.ImageUrl = expected;
-                    refreshed = true;
+                    await SeedFoodsAsync(context, 250, foodImageService);
                 }
-            }
 
-            if (refreshed)
-            {
-                context.SaveChanges();
+                // Ensure all existing dishes have unique, dish-specific image URLs.
+                var foodsToRefresh = context.Foods
+                    .Include(f => f.Restaurant)
+                    .ToList();
+
+                var refreshed = false;
+                foreach (var food in foodsToRefresh)
+                {
+                    var baseDishName = food.Name.Contains(" - ", StringComparison.Ordinal)
+                        ? food.Name.Split(" - ", StringSplitOptions.RemoveEmptyEntries)[0]
+                        : food.Name;
+
+                    var expected = await ResolveDishImageUrlAsync(baseDishName, foodImageService);
+                    if (food.ImageUrl != expected)
+                    {
+                        food.ImageUrl = expected;
+                        refreshed = true;
+                    }
+                }
+
+                if (refreshed)
+                {
+                    context.SaveChanges();
+                }
             }
 
             logger.LogInformation("Startup data initialization completed successfully.");
