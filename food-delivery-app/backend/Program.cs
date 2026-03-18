@@ -47,7 +47,13 @@ builder.Services.AddDbContext<FoodDeliveryDbContext>(options =>
     }
     else
     {
-        options.UseNpgsql(postgresConnectionString!);
+        options.UseNpgsql(
+            postgresConnectionString!,
+            npgsqlOptions =>
+            {
+                npgsqlOptions.EnableRetryOnFailure(5, TimeSpan.FromSeconds(10), null);
+                npgsqlOptions.CommandTimeout(120);
+            });
     }
 });
 
@@ -121,6 +127,7 @@ builder.Services.AddCors(options =>
 });
 
 var app = builder.Build();
+var seedDataOnStartup = app.Configuration.GetValue<bool?>("SeedDataOnStartup") ?? app.Environment.IsDevelopment();
 
 var renderPort = Environment.GetEnvironmentVariable("PORT");
 if (!string.IsNullOrWhiteSpace(renderPort))
@@ -153,93 +160,13 @@ try
     app.MapGet("/health", () => Results.Ok(new { status = "ok", service = "ziggy-api" }));
     app.MapControllers();
 
-    // Create database and seed data
-    using (var scope = app.Services.CreateScope())
+    if (seedDataOnStartup)
     {
-        var services = scope.ServiceProvider;
-        var context = services.GetRequiredService<FoodDeliveryDbContext>();
-        context.Database.EnsureCreated();
-
-        if (!context.Users.Any())
-        {
-            context.Users.AddRange(
-                new User
-                {
-                    Name = "Platform Admin",
-                    Email = "admin@ziggy.com",
-                    PasswordHash = BCrypt.Net.BCrypt.HashPassword("Admin@123"),
-                    Role = "Admin"
-                },
-                new User
-                {
-                    Name = "Rahul Customer",
-                    Email = "customer@ziggy.com",
-                    PasswordHash = BCrypt.Net.BCrypt.HashPassword("Customer@123"),
-                    Role = "Customer"
-                },
-                new User
-                {
-                    Name = "Aman Rider",
-                    Email = "delivery@ziggy.com",
-                    PasswordHash = BCrypt.Net.BCrypt.HashPassword("Delivery@123"),
-                    Role = "DeliveryAgent"
-                }
-            );
-            context.SaveChanges();
-        }
-
-        if (!context.FoodCategories.Any())
-        {
-            context.FoodCategories.AddRange(
-                new FoodCategory { Name = "Main Course" },
-                new FoodCategory { Name = "Desserts" },
-                new FoodCategory { Name = "Starters" },
-                new FoodCategory { Name = "Beverages" }
-            );
-            context.SaveChanges();
-        }
-
-        if (!context.Restaurants.Any())
-        {
-            SeedRestaurants(context);
-        }
-
-        if (context.Restaurants.Count() < 25)
-        {
-            SeedRestaurants(context);
-        }
-
-        var foodImageService = services.GetRequiredService<IFoodImageService>();
-
-        if (context.Foods.Count() < 250)
-        {
-            await SeedFoodsAsync(context, 250, foodImageService);
-        }
-
-        // Ensure all existing dishes have unique, dish-specific image URLs.
-        var foodsToRefresh = context.Foods
-            .Include(f => f.Restaurant)
-            .ToList();
-
-        var refreshed = false;
-        foreach (var food in foodsToRefresh)
-        {
-            var baseDishName = food.Name.Contains(" - ", StringComparison.Ordinal)
-                ? food.Name.Split(" - ", StringSplitOptions.RemoveEmptyEntries)[0]
-                : food.Name;
-
-            var expected = await ResolveDishImageUrlAsync(baseDishName, foodImageService);
-            if (food.ImageUrl != expected)
-            {
-                food.ImageUrl = expected;
-                refreshed = true;
-            }
-        }
-
-        if (refreshed)
-        {
-            context.SaveChanges();
-        }
+        await TryInitializeAndSeedDataAsync(app.Services, app.Logger);
+    }
+    else
+    {
+        app.Logger.LogInformation("SeedDataOnStartup is disabled. Skipping startup data seeding.");
     }
 
     Console.WriteLine("FoodDeliveryAPI started successfully.");
@@ -276,6 +203,120 @@ static string ConvertDatabaseUrlToConnectionString(string databaseUrl)
     };
 
     return builder.ConnectionString;
+}
+
+static async Task TryInitializeAndSeedDataAsync(IServiceProvider rootServices, ILogger logger)
+{
+    const int maxAttempts = 3;
+
+    for (var attempt = 1; attempt <= maxAttempts; attempt++)
+    {
+        try
+        {
+            using var scope = rootServices.CreateScope();
+            var services = scope.ServiceProvider;
+            var context = services.GetRequiredService<FoodDeliveryDbContext>();
+
+            context.Database.SetCommandTimeout(120);
+            context.Database.EnsureCreated();
+
+            if (!context.Users.Any())
+            {
+                context.Users.AddRange(
+                    new User
+                    {
+                        Name = "Platform Admin",
+                        Email = "admin@ziggy.com",
+                        PasswordHash = BCrypt.Net.BCrypt.HashPassword("Admin@123"),
+                        Role = "Admin"
+                    },
+                    new User
+                    {
+                        Name = "Rahul Customer",
+                        Email = "customer@ziggy.com",
+                        PasswordHash = BCrypt.Net.BCrypt.HashPassword("Customer@123"),
+                        Role = "Customer"
+                    },
+                    new User
+                    {
+                        Name = "Aman Rider",
+                        Email = "delivery@ziggy.com",
+                        PasswordHash = BCrypt.Net.BCrypt.HashPassword("Delivery@123"),
+                        Role = "DeliveryAgent"
+                    }
+                );
+                context.SaveChanges();
+            }
+
+            if (!context.FoodCategories.Any())
+            {
+                context.FoodCategories.AddRange(
+                    new FoodCategory { Name = "Main Course" },
+                    new FoodCategory { Name = "Desserts" },
+                    new FoodCategory { Name = "Starters" },
+                    new FoodCategory { Name = "Beverages" }
+                );
+                context.SaveChanges();
+            }
+
+            if (!context.Restaurants.Any())
+            {
+                SeedRestaurants(context);
+            }
+
+            if (context.Restaurants.Count() < 25)
+            {
+                SeedRestaurants(context);
+            }
+
+            var foodImageService = services.GetRequiredService<IFoodImageService>();
+
+            if (context.Foods.Count() < 250)
+            {
+                await SeedFoodsAsync(context, 250, foodImageService);
+            }
+
+            // Ensure all existing dishes have unique, dish-specific image URLs.
+            var foodsToRefresh = context.Foods
+                .Include(f => f.Restaurant)
+                .ToList();
+
+            var refreshed = false;
+            foreach (var food in foodsToRefresh)
+            {
+                var baseDishName = food.Name.Contains(" - ", StringComparison.Ordinal)
+                    ? food.Name.Split(" - ", StringSplitOptions.RemoveEmptyEntries)[0]
+                    : food.Name;
+
+                var expected = await ResolveDishImageUrlAsync(baseDishName, foodImageService);
+                if (food.ImageUrl != expected)
+                {
+                    food.ImageUrl = expected;
+                    refreshed = true;
+                }
+            }
+
+            if (refreshed)
+            {
+                context.SaveChanges();
+            }
+
+            logger.LogInformation("Startup data initialization completed successfully.");
+            return;
+        }
+        catch (Exception ex)
+        {
+            logger.LogWarning(ex, "Startup data initialization attempt {Attempt}/{MaxAttempts} failed.", attempt, maxAttempts);
+
+            if (attempt == maxAttempts)
+            {
+                logger.LogError("Skipping startup data initialization after {MaxAttempts} failed attempts.", maxAttempts);
+                return;
+            }
+
+            await Task.Delay(TimeSpan.FromSeconds(5 * attempt));
+        }
+    }
 }
 
 static void SeedRestaurants(FoodDeliveryDbContext context)
