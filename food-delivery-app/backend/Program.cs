@@ -157,6 +157,13 @@ try
     app.UseCors("AllowAll");
     app.UseAuthentication();
     app.UseAuthorization();
+    app.MapGet("/", () => Results.Ok(new
+    {
+        service = "ziggy-api",
+        status = "ok",
+        docs = "/health",
+        api = "/api/restaurants"
+    }));
     app.MapGet("/health", () => Results.Ok(new { status = "ok", service = "ziggy-api" }));
     app.MapControllers();
 
