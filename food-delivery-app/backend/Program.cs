@@ -170,7 +170,22 @@ try
 
     if (seedDataOnStartup)
     {
-        await TryInitializeAndSeedDataAsync(app.Services, app.Logger, seedFullCatalogOnStartup);
+        app.Lifetime.ApplicationStarted.Register(() =>
+        {
+            _ = Task.Run(async () =>
+            {
+                try
+                {
+                    await TryInitializeAndSeedDataAsync(app.Services, app.Logger, seedFullCatalogOnStartup);
+                }
+                catch (Exception ex)
+                {
+                    app.Logger.LogError(ex, "Background startup data initialization failed.");
+                }
+            });
+        });
+
+        app.Logger.LogInformation("SeedDataOnStartup is enabled. Data seeding will run in the background after startup.");
     }
     else
     {
