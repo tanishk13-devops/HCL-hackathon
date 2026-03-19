@@ -1,4 +1,5 @@
 using FoodDeliveryAPI.DTOs;
+using FoodDeliveryAPI.Models;
 using FoodDeliveryAPI.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -10,16 +11,30 @@ namespace FoodDeliveryAPI.Controllers
     public class RestaurantsController : ControllerBase
     {
         private readonly IRestaurantService _restaurantService;
+        private readonly ILogger<RestaurantsController> _logger;
 
-        public RestaurantsController(IRestaurantService restaurantService)
+        public RestaurantsController(
+            IRestaurantService restaurantService,
+            ILogger<RestaurantsController> logger)
         {
             _restaurantService = restaurantService;
+            _logger = logger;
         }
 
         [HttpGet]
         [AllowAnonymous]
         public async Task<IActionResult> GetAll([FromQuery] string? search)
-            => Ok(await _restaurantService.GetRestaurantsAsync(search));
+        {
+            try
+            {
+                return Ok(await _restaurantService.GetRestaurantsAsync(search));
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to fetch restaurants. Returning empty fallback list.");
+                return Ok(new List<Restaurant>());
+            }
+        }
 
         [HttpGet("{id:int}")]
         [AllowAnonymous]
