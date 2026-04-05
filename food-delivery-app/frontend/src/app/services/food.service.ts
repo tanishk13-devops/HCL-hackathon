@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, BehaviorSubject, catchError, of } from 'rxjs';
+import { map } from 'rxjs/operators';
 import { Food } from '../models/food.model';
 import { environment } from '../../environments/environment';
 
@@ -55,6 +56,28 @@ export class FoodService {
       restaurantId: 2,
       imageUrl: 'https://images.unsplash.com/photo-1666190092159-3171cf0fbb12?q=80&w=1200',
       isAvailable: true
+    },
+    {
+      id: 301,
+      name: 'Veg Biryani',
+      description: 'Aromatic basmati rice with vegetables and spices.',
+      price: 259,
+      categoryId: 1,
+      categoryName: 'Main Course',
+      restaurantId: 3,
+      imageUrl: 'https://images.pexels.com/photos/5410401/pexels-photo-5410401.jpeg?auto=compress&cs=tinysrgb&w=1200',
+      isAvailable: true
+    },
+    {
+      id: 302,
+      name: 'Chocolate Mousse',
+      description: 'Silky smooth dessert topped with dark chocolate.',
+      price: 139,
+      categoryId: 2,
+      categoryName: 'Desserts',
+      restaurantId: 3,
+      imageUrl: 'https://images.pexels.com/photos/4110008/pexels-photo-4110008.jpeg?auto=compress&cs=tinysrgb&w=1200',
+      isAvailable: true
     }
   ];
 
@@ -73,15 +96,35 @@ export class FoodService {
   getRestaurantMenu(restaurantId: number, categoryId?: number): Observable<Food[]> {
     const query = categoryId ? `?categoryId=${categoryId}` : '';
     return this.http.get<Food[]>(`${this.apiUrl}/restaurant/${restaurantId}${query}`).pipe(
-      catchError(() => {
-        let data = this.fallbackFoods.filter(f => f.restaurantId === restaurantId);
-        if (categoryId) {
-          data = data.filter(f => f.categoryId === categoryId);
+      map((foods) => {
+        if (foods.length > 0) {
+          return foods;
         }
 
-        return of(data);
+        return this.getFallbackFoods(restaurantId, categoryId);
+      }),
+      catchError(() => {
+        return of(this.getFallbackFoods(restaurantId, categoryId));
       })
     );
+  }
+
+  private getFallbackFoods(restaurantId: number, categoryId?: number): Food[] {
+    const normalizedRestaurantId = this.normalizeRestaurantId(restaurantId);
+    let data = this.fallbackFoods.filter(f => f.restaurantId === normalizedRestaurantId);
+
+    if (categoryId) {
+      data = data.filter(f => f.categoryId === categoryId);
+    }
+
+    return data;
+  }
+
+  private normalizeRestaurantId(restaurantId: number): number {
+    if (restaurantId === 10001) return 1;
+    if (restaurantId === 10002) return 2;
+    if (restaurantId === 10003) return 3;
+    return restaurantId;
   }
 
   getFoodById(id: number): Observable<Food> {
