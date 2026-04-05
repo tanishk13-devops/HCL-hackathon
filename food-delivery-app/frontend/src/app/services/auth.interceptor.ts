@@ -1,14 +1,34 @@
 import { HttpInterceptorFn } from '@angular/common/http';
 
 export const authInterceptor: HttpInterceptorFn = (req, next) => {
-  const token = localStorage.getItem('token');
-  if (!token) {
-    return next(req);
+  const renderApiBase = 'https://ziggy-u65z.onrender.com';
+
+  let url = req.url;
+
+  if (url.startsWith('/api/')) {
+    url = `${renderApiBase}${url}`;
+  } else if (url.startsWith('http')) {
+    try {
+      const parsed = new URL(url);
+      if (parsed.pathname.startsWith('/api/') && parsed.hostname.endsWith('vercel.app')) {
+        url = `${renderApiBase}${parsed.pathname}${parsed.search}`;
+      }
+    } catch {
+      // keep original URL
+    }
   }
 
-  const authReq = req.clone({
-    setHeaders: { Authorization: `Bearer ${token}` }
-  });
+  const token = localStorage.getItem('token');
+  const authReq = req.clone(
+    token
+      ? {
+          url,
+          setHeaders: { Authorization: `Bearer ${token}` }
+        }
+      : {
+          url
+        }
+  );
 
   return next(authReq);
 };
