@@ -6,7 +6,7 @@ import { FoodService } from '../../services/food.service';
 import { Restaurant } from '../../models/restaurant.model';
 import { Food } from '../../models/food.model';
 import { forkJoin, of } from 'rxjs';
-import { catchError } from 'rxjs/operators';
+import { catchError, retry } from 'rxjs/operators';
 
 @Component({
   selector: 'app-home',
@@ -97,7 +97,9 @@ export class HomeComponent implements OnInit, OnDestroy {
   }
 
   private loadFeaturedRestaurants(): void {
-    this.restaurantService.getRestaurants().subscribe({
+    this.restaurantService.getRestaurants()
+      .pipe(retry({ count: 2, delay: 1500 }))
+      .subscribe({
       next: (data) => {
         this.apiError = '';
         this.featuredRestaurants = data.slice(0, 6);
@@ -109,7 +111,7 @@ export class HomeComponent implements OnInit, OnDestroy {
       error: () => {
         this.loadingFeatured = false;
         this.loadingTrending = false;
-        this.apiError = 'Backend is not reachable. Please start API server and refresh.';
+        this.apiError = 'Backend is waking up. Please refresh in a few seconds.';
       }
     });
   }
