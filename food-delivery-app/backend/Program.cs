@@ -113,7 +113,29 @@ builder.Services.AddCors(options =>
             var origins = allowedOrigins
                 .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
 
-            policy.WithOrigins(origins)
+            policy.SetIsOriginAllowed(origin =>
+                  {
+                      if (string.IsNullOrWhiteSpace(origin))
+                      {
+                          return false;
+                      }
+
+                      // Explicit allow-list from env var.
+                      if (origins.Contains(origin, StringComparer.OrdinalIgnoreCase))
+                      {
+                          return true;
+                      }
+
+                      // Allow Vercel hosted frontend domains.
+                      if (Uri.TryCreate(origin, UriKind.Absolute, out var uri)
+                          && uri.Scheme == Uri.UriSchemeHttps
+                          && uri.Host.EndsWith(".vercel.app", StringComparison.OrdinalIgnoreCase))
+                      {
+                          return true;
+                      }
+
+                      return false;
+                  })
                   .AllowAnyMethod()
                   .AllowAnyHeader();
         }
