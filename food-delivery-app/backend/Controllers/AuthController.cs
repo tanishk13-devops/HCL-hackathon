@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Http;
 using FoodDeliveryAPI.DTOs;
 using FoodDeliveryAPI.Services.Interfaces;
 
@@ -36,6 +37,10 @@ namespace FoodDeliveryAPI.Controllers
             {
                 var result = await _authService.LoginAsync(request);
                 return Ok(result);
+            }
+            catch (InvalidOperationException ex)
+            {
+                return StatusCode(StatusCodes.Status503ServiceUnavailable, ex.Message);
             }
             catch (UnauthorizedAccessException)
             {

@@ -3,6 +3,7 @@ using FoodDeliveryAPI.Data;
 using FoodDeliveryAPI.Models;
 using FoodDeliveryAPI.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -15,26 +16,31 @@ namespace FoodDeliveryAPI.Controllers
         private readonly IRestaurantService _restaurantService;
         private readonly ILogger<RestaurantsController> _logger;
         private readonly FoodDeliveryDbContext _dbContext;
+        private readonly IConfiguration _configuration;
 
         public RestaurantsController(
             IRestaurantService restaurantService,
             ILogger<RestaurantsController> logger,
-            FoodDeliveryDbContext dbContext)
+            FoodDeliveryDbContext dbContext,
+            IConfiguration configuration)
         {
             _restaurantService = restaurantService;
             _logger = logger;
             _dbContext = dbContext;
+            _configuration = configuration;
         }
 
         [HttpGet]
         [AllowAnonymous]
         public async Task<IActionResult> GetAll([FromQuery] string? search)
         {
+            var enableFallbackData = _configuration.GetValue<bool>("EnableFallbackData");
+
             try
             {
                 var restaurants = await _restaurantService.GetRestaurantsAsync(search);
 
-                if (restaurants.Count < 20)
+                if (enableFallbackData && restaurants.Count < 20)
                 {
                     await EnsureMinimalRestaurantsAsync();
                     restaurants = await _restaurantService.GetRestaurantsAsync(search);
@@ -50,7 +56,12 @@ namespace FoodDeliveryAPI.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Failed to fetch restaurants. Returning empty fallback list.");
-                return Ok(BuildFallbackRestaurants(search));
+                if (enableFallbackData)
+                {
+                    return Ok(BuildFallbackRestaurants(search));
+                }
+
+                return StatusCode(StatusCodes.Status503ServiceUnavailable, "Restaurant service unavailable.");
             }
         }
 

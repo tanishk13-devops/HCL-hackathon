@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using FoodDeliveryAPI.DTOs;
 using FoodDeliveryAPI.Models;
 using FoodDeliveryAPI.Services.Interfaces;
@@ -11,20 +12,24 @@ namespace FoodDeliveryAPI.Controllers
     public class FoodsController : ControllerBase
     {
         private readonly IFoodService _foodService;
+        private readonly IConfiguration _configuration;
 
-        public FoodsController(IFoodService foodService)
+        public FoodsController(IFoodService foodService, IConfiguration configuration)
         {
             _foodService = foodService;
+            _configuration = configuration;
         }
 
         [HttpGet("restaurant/{restaurantId:int}")]
         [AllowAnonymous]
         public async Task<ActionResult<IEnumerable<Food>>> GetRestaurantMenu(int restaurantId, [FromQuery] int? categoryId)
         {
+            var enableFallbackData = _configuration.GetValue<bool>("EnableFallbackData");
+
             try
             {
                 var menu = await _foodService.GetRestaurantMenuAsync(restaurantId, categoryId);
-                if (menu.Any())
+                if (menu.Any() || !enableFallbackData)
                 {
                     return Ok(menu);
                 }
@@ -33,7 +38,12 @@ namespace FoodDeliveryAPI.Controllers
             }
             catch
             {
-                return Ok(BuildFallbackMenu(restaurantId, categoryId));
+                if (enableFallbackData)
+                {
+                    return Ok(BuildFallbackMenu(restaurantId, categoryId));
+                }
+
+                return StatusCode(StatusCodes.Status503ServiceUnavailable, "Menu service unavailable.");
             }
         }
 
