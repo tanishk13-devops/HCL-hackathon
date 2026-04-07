@@ -18,7 +18,7 @@ namespace FoodDeliveryAPI.Services.Implementations
 
         public string CreateToken(User user)
         {
-            var jwtKey = _configuration["Jwt:Key"] ?? throw new InvalidOperationException("Jwt:Key is missing");
+            var jwtKey = _configuration["Jwt:Key"] ?? "ThisIsADevelopmentOnlySuperSecretJwtKey123!";
             var issuer = _configuration["Jwt:Issuer"] ?? "FoodDeliveryAPI";
             var audience = _configuration["Jwt:Audience"] ?? "FoodDeliveryAPI.Client";
 
