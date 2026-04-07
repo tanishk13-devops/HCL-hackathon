@@ -134,6 +134,15 @@ builder.Services.AddCors(options =>
                           return true;
                       }
 
+                      // Allow local frontend development origins.
+                      if (Uri.TryCreate(origin, UriKind.Absolute, out var localUri)
+                          && (localUri.Host.Equals("localhost", StringComparison.OrdinalIgnoreCase)
+                              || localUri.Host.Equals("127.0.0.1", StringComparison.OrdinalIgnoreCase))
+                          && (localUri.Port == 3000 || localUri.Port == 4200 || localUri.Port == 5173))
+                      {
+                          return true;
+                      }
+
                       return false;
                   })
                   .AllowAnyMethod()
