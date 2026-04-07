@@ -39,8 +39,24 @@ export class LoginComponent {
         },
         error: (err) => {
           this.loading = false;
-          this.error = err.error?.message || 'Login failed. Please check your email and password.';
+          this.error = this.extractError(err, 'Login failed. Please check your email and password.');
         }
       });
+  }
+
+  private extractError(err: any, fallback: string): string {
+    if (typeof err?.error === 'string' && err.error.trim()) {
+      return err.error;
+    }
+
+    if (typeof err?.error?.message === 'string' && err.error.message.trim()) {
+      return err.error.message;
+    }
+
+    if (typeof err?.message === 'string' && err.message.trim()) {
+      return err.message;
+    }
+
+    return fallback;
   }
 }

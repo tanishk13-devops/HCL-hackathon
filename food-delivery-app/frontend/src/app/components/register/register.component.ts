@@ -41,19 +41,35 @@ export class RegisterComponent {
         next: () => {
           this.loading = false;
           this.error = '';
-          this.success = 'Registration successful! Redirecting to login...';
+          this.success = 'Registration successful! Redirecting...';
           this.name = '';
           this.email = '';
           this.password = '';
           this.phone = '';
           setTimeout(() => {
-            this.router.navigate(['/login']);
+            this.router.navigate(['/restaurants']);
           }, 2000);
         },
         error: (err) => {
           this.loading = false;
-          this.error = err.error?.message || 'Registration failed. Please try a different email.';
+          this.error = this.extractError(err, 'Registration failed. Please try a different email.');
         }
       });
+  }
+
+  private extractError(err: any, fallback: string): string {
+    if (typeof err?.error === 'string' && err.error.trim()) {
+      return err.error;
+    }
+
+    if (typeof err?.error?.message === 'string' && err.error.message.trim()) {
+      return err.error.message;
+    }
+
+    if (typeof err?.message === 'string' && err.message.trim()) {
+      return err.message;
+    }
+
+    return fallback;
   }
 }

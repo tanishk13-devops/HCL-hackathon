@@ -19,8 +19,9 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
   }
 
   const token = localStorage.getItem('token');
+  const isAuthEndpoint = url.includes('/api/auth/');
   const authReq = req.clone(
-    token
+    token && !isAuthEndpoint
       ? {
           url,
           setHeaders: { Authorization: `Bearer ${token}` }

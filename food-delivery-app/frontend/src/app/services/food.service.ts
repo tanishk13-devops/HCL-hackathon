@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable, BehaviorSubject, catchError, of } from 'rxjs';
+import { Observable, BehaviorSubject, catchError, of, shareReplay } from 'rxjs';
 import { map } from 'rxjs/operators';
 import { Food } from '../models/food.model';
 import { environment } from '../../environments/environment';
@@ -12,6 +12,7 @@ export class FoodService {
   private apiUrl = `${environment.apiUrl}/food-items`;
   private foodsSubject = new BehaviorSubject<Food[]>([]);
   public foods$ = this.foodsSubject.asObservable();
+  private menuCache = new Map<string, Observable<Food[]>>();
   private readonly fallbackFoods: Food[] = [
     {
       id: 101,
@@ -81,9 +82,7 @@ export class FoodService {
     }
   ];
 
-  constructor(private http: HttpClient) {
-    this.loadFoods();
-  }
+  constructor(private http: HttpClient) {}
 
   loadFoods(): void {
     this.getRestaurantMenu(1).subscribe(foods => {
@@ -94,19 +93,27 @@ export class FoodService {
   getFoods(): Observable<Food[]> { return this.getRestaurantMenu(1); }
 
   getRestaurantMenu(restaurantId: number, categoryId?: number): Observable<Food[]> {
-    const query = categoryId ? `?categoryId=${categoryId}` : '';
-    return this.http.get<Food[]>(`${this.apiUrl}/restaurant/${restaurantId}${query}`).pipe(
-      map((foods) => {
-        if (foods.length > 0) {
-          return foods;
-        }
+    const normalizedRestaurantId = this.normalizeRestaurantId(restaurantId);
+    const cacheKey = `${normalizedRestaurantId}:${categoryId ?? 'all'}`;
 
-        return this.getFallbackFoods(restaurantId, categoryId);
-      }),
-      catchError(() => {
-        return of(this.getFallbackFoods(restaurantId, categoryId));
-      })
-    );
+    if (!this.menuCache.has(cacheKey)) {
+      const query = categoryId ? `?categoryId=${categoryId}` : '';
+      const request$ = this.http.get<Food[]>(`${this.apiUrl}/restaurant/${restaurantId}${query}`).pipe(
+        map((foods) => {
+          if (foods.length > 0) {
+            return foods;
+          }
+
+          return this.getFallbackFoods(restaurantId, categoryId);
+        }),
+        catchError(() => of(this.getFallbackFoods(restaurantId, categoryId))),
+        shareReplay(1)
+      );
+
+      this.menuCache.set(cacheKey, request$);
+    }
+
+    return this.menuCache.get(cacheKey)!;
   }
 
   private getFallbackFoods(restaurantId: number, categoryId?: number): Food[] {
@@ -121,9 +128,10 @@ export class FoodService {
   }
 
   private normalizeRestaurantId(restaurantId: number): number {
-    if (restaurantId === 10001) return 1;
-    if (restaurantId === 10002) return 2;
-    if (restaurantId === 10003) return 3;
+    if (restaurantId >= 10001 && restaurantId <= 19999) {
+      return restaurantId - 10000;
+    }
+
     return restaurantId;
   }
 
