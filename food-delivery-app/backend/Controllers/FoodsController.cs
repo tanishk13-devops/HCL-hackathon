@@ -41,9 +41,7 @@ namespace FoodDeliveryAPI.Controllers
         {
             var normalizedRestaurantId = restaurantId switch
             {
-                10001 => 1,
-                10002 => 2,
-                10003 => 3,
+                >= 10001 and <= 19999 => restaurantId - 10000,
                 _ => restaurantId <= 0 ? 1 : restaurantId
             };
 
