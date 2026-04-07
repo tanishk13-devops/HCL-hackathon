@@ -26,6 +26,7 @@
   </div>
 
   <p *ngIf="addSuccessMessage" class="success-pop">{{ addSuccessMessage }}</p>
+  <p *ngIf="!loading && errorMessage" class="result-text">{{ errorMessage }}</p>
   <p class="result-text" *ngIf="!loading">Showing {{ filteredFoods.length }} item(s)</p>
 
   <div *ngIf="loading" class="loading-stack">

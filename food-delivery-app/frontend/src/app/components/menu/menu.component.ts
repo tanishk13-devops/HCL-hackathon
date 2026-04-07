@@ -27,6 +27,7 @@ export class MenuComponent implements OnInit {
   sortBy: 'recommended' | 'priceLowToHigh' | 'priceHighToLow' | 'nameAsc' = 'recommended';
   filteredFoods: MenuFoodItem[] = [];
   loading = true;
+  errorMessage = '';
   readonly skeletonItems = Array.from({ length: 8 });
   addSuccessMessage = '';
   readonly defaultFoodImage = 'https://images.pexels.com/photos/1640777/pexels-photo-1640777.jpeg?auto=compress&cs=tinysrgb&w=1200';
@@ -89,6 +90,9 @@ export class MenuComponent implements OnInit {
   }
 
   loadFoods(): void {
+    this.loading = true;
+    this.errorMessage = '';
+
     this.foodService.getRestaurantMenu(this.restaurantId).subscribe({
       next: (foods) => {
         this.foods = this.mapFoodsWithUniqueImages(foods);
@@ -97,6 +101,10 @@ export class MenuComponent implements OnInit {
         this.loading = false;
       },
       error: () => {
+        this.foods = [];
+        this.filteredFoods = [];
+        this.categories = [];
+        this.errorMessage = 'Unable to load menu right now. Please try again.';
         this.loading = false;
       }
     });
@@ -184,7 +192,6 @@ export class MenuComponent implements OnInit {
 
   onImageError(item: MenuFoodItem, index: number): void {
     item.image = this.defaultFoodImage;
-    console.log(`[MENU_IMAGE_FALLBACK] index=${index} name=${item.name}`);
   }
 
   trackByFood(index: number, item: MenuFoodItem): number {
@@ -195,8 +202,6 @@ export class MenuComponent implements OnInit {
     return foods.map((item) => {
       const baseName = this.extractBaseDishName(item.name);
       const image = this.foodImageMap[baseName] || this.defaultFoodImage;
-
-      console.log(`[MENU_IMAGE] ${item.name} -> ${image}`);
 
       return {
         ...item,
